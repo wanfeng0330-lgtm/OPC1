@@ -1,0 +1,50 @@
+{
+  "team_id": "188",
+  "participant_name": "郑涵予",
+  "school": "北京信息科技大学",
+  "project_name": "PM Insight Copilot - 项目经理智能副驾驶",
+  "selected_task": "需求A",
+  "submission_filename": "188-郑涵予-北京信息科技大学-PM_Insight_Copilot.zip",
+  "project_summary": "基于5-Agent协作架构的AI项目经理智能副驾驶，帮助项目经理30秒内掌握项目状态、发现风险、找到历史经验并生成行动建议。",
+  "live_url": "https://opc1.pages.dev/",
+  "github_repo": "https://github.com/wanfeng0330-lgtm/OPC1",
+  "deployment": {
+    "platform": "Cloudflare Pages",
+    "status": "已部署上线",
+    "auto_deploy": true,
+    "url": "https://opc1.pages.dev/"
+  },
+  "prototype": {
+    "pages": 8,
+    "page_list": [
+      "经营驾驶舱 - 项目统计、风险分布、成本对比、AI工作流全景",
+      "项目全景 - 8个项目卡片，含健康度环形图、成本进度条",
+      "项目详情 - 完整项目画像、证据链追溯、AI健康体检",
+      "风险分析 - 高/中/低风险分类、多维度指标",
+      "报告中心 - 诊断报告/月报/复盘报告",
+      "审核中心 - 人机协同界面（确认/修改/驳回）",
+      "知识库 - 历史案例库、风险规则库、SOP库",
+      "AI 对话 - 独立AI对话页面，5-Agent协同分析"
+    ],
+    "features": [
+      "AI工作流全景管线 - 5步流程可视化",
+      "独立AI对话页面 - 5-Agent协同分析，接入DeepSeek V4 Flash",
+      "项目健康体检 - 一键分析项目风险",
+      "证据链追溯 - 每个结论可追溯到来源文件",
+      "人机协同审核 - 确认/修改/驳回按钮",
+      "Toast通知系统 - 操作反馈",
+      "动画计数器 - 数据动态展示"
+    ],
+    "ai_model": "DeepSeek V4 Flash",
+    "tech_stack": "HTML + CSS + JavaScript，部署于 Cloudflare Pages"
+  },
+  "key_differentiators": [
+    "5-Agent协作架构（非单Agent聊天机器人）",
+    "四层证据链追溯（结论→规则→数据→来源）",
+    "人机协同审核机制（涉及财务/验收必须人工确认）",
+    "企业级Dashboard（非聊天框）",
+    "完整工作流可视化（5步管线）",
+    "独立AI对话页面（DeepSeek V4 Flash真实接入）",
+    "已部署上线（Cloudflare Pages公网可访问）"
+  ]
+}
