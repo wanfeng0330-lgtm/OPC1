@@ -1,0 +1,2273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="PM Insight Copilot - 项目经理智能副驾驶 | AI驱动的项目风险分析与经营诊断平台">
+<meta name="keywords" content="AI,项目管理,风险分析,Copilot,DeepSeek">
+<meta name="author" content="PM Insight Team">
+<meta property="og:title" content="PM Insight Copilot - 项目经理智能副驾驶">
+<meta property="og:description" content="30秒掌握项目状态、发现风险、定位问题、找到历史经验">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+<title>PM Insight Copilot - 项目经理智能副驾驶</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+      colors: {
+        brand: { 50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a' },
+        surface: { 50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',900:'#0f172a' }
+      }
+    }
+  }
+}
+</script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; color: #1e293b; overflow-x: hidden; }
+  .glass { background: rgba(255,255,255,0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.3); }
+  .glass-dark { background: rgba(15,23,42,0.9); backdrop-filter: blur(20px); }
+  .gradient-brand { background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%); }
+  .gradient-brand-soft { background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(139,92,246,0.1) 100%); }
+  .gradient-text { background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .sidebar-link { transition: all 0.2s; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; color: #94a3b8; font-weight: 500; }
+  .sidebar-link:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
+  .sidebar-link.active { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .sidebar-link.active svg { color: #60a5fa; }
+  .card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; transition: all 0.3s; }
+  .card:hover { box-shadow: 0 20px 40px rgba(0,0,0,0.08); transform: translateY(-2px); }
+  .stat-card { position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: -50%; right: -50%; width: 100%; height: 100%; border-radius: 50%; opacity: 0.1; }
+  .risk-high { color: #ef4444; background: rgba(239,68,68,0.1); }
+  .risk-medium { color: #f59e0b; background: rgba(245,158,11,0.1); }
+  .risk-low { color: #10b981; background: rgba(16,185,129,0.1); }
+  .health-ring { position: relative; width: 80px; height: 80px; }
+  .health-ring svg { transform: rotate(-90deg); }
+  .health-ring .value { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-weight: 700; font-size: 18px; }
+  .fade-in { animation: fadeIn 0.6s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .slide-in { animation: slideIn 0.4s ease-out; }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+  .pulse-dot { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .evidence-chain { position: relative; }
+  .evidence-chain::before { content: ''; position: absolute; left: 20px; top: 40px; bottom: 0; width: 2px; background: linear-gradient(to bottom, #3b82f6, #8b5cf6, #ec4899); }
+  .page { display: none; }
+  .page.active { display: block; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+  /* AI Chat Styles */
+  .ai-chat-btn {
+    position: fixed; bottom: 24px; right: 24px; width: 60px; height: 60px;
+    border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white; border: none; cursor: pointer; z-index: 1000;
+    box-shadow: 0 8px 32px rgba(59,130,246,0.4);
+    transition: all 0.3s; display: flex; align-items: center; justify-content: center;
+  }
+  .ai-chat-btn:hover { transform: scale(1.1); box-shadow: 0 12px 40px rgba(59,130,246,0.5); }
+  .ai-chat-btn.active { background: linear-gradient(135deg, #ef4444, #ec4899); }
+  .ai-chat-window {
+    position: fixed; bottom: 100px; right: 24px; width: 400px; height: 500px;
+    background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    z-index: 999; display: none; flex-direction: column; overflow: hidden;
+    border: 1px solid #e2e8f0;
+  }
+  .ai-chat-window.open { display: flex; animation: slideUp 0.3s ease-out; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .ai-chat-header {
+    padding: 16px 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white; display: flex; align-items: center; justify-content: space-between;
+  }
+  .ai-chat-messages { flex: 1; overflow-y: auto; padding: 16px; }
+  .ai-message { margin-bottom: 12px; display: flex; gap: 8px; }
+  .ai-message.user { flex-direction: row-reverse; }
+  .ai-message .bubble {
+    max-width: 80%; padding: 10px 14px; border-radius: 16px;
+    font-size: 13px; line-height: 1.5;
+  }
+  .ai-message.assistant .bubble { background: #f1f5f9; color: #1e293b; border-bottom-left-radius: 4px; }
+  .ai-message.user .bubble { background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; border-bottom-right-radius: 4px; }
+  .ai-message .avatar {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .ai-message.assistant .avatar { background: #eff6ff; }
+  .ai-message.user .avatar { background: #dbeafe; }
+  .ai-chat-input { padding: 12px 16px; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; }
+  .ai-chat-input input {
+    flex: 1; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 12px;
+    font-size: 13px; outline: none; transition: border-color 0.2s;
+  }
+  .ai-chat-input input:focus { border-color: #3b82f6; }
+  .ai-chat-input button {
+    padding: 10px 16px; background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white; border: none; border-radius: 12px; cursor: pointer;
+    font-size: 13px; font-weight: 500; transition: opacity 0.2s;
+  }
+  .ai-chat-input button:hover { opacity: 0.9; }
+  .ai-chat-input button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .ai-typing { display: flex; gap: 4px; padding: 8px 14px; }
+  .ai-typing span {
+    width: 8px; height: 8px; background: #94a3b8; border-radius: 50%;
+    animation: typing 1.4s infinite;
+  }
+  .ai-typing span:nth-child(2) { animation-delay: 0.2s; }
+  .ai-typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-8px); } }
+  .ai-quick-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .ai-quick-actions button {
+    padding: 6px 12px; background: #eff6ff; color: #3b82f6; border: 1px solid #dbeafe;
+    border-radius: 20px; font-size: 11px; cursor: pointer; transition: all 0.2s;
+  }
+  .ai-quick-actions button:hover { background: #3b82f6; color: white; }
+  .ai-health-btn {
+    padding: 8px 16px; background: linear-gradient(135deg, #10b981, #059669);
+    color: white; border: none; border-radius: 10px; cursor: pointer;
+    font-size: 13px; font-weight: 500; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .ai-health-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16,185,129,0.4); }
+  .ai-health-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .ai-status-badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+    border-radius: 20px; font-size: 11px; font-weight: 500;
+  }
+  .ai-status-badge.online { background: #dcfce7; color: #166534; }
+  .ai-status-badge.offline { background: #fef3c7; color: #92400e; }
+
+  /* Toast Notifications */
+  .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
+  .toast {
+    padding: 12px 20px; border-radius: 12px; color: white; font-size: 13px; font-weight: 500;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2); transform: translateX(120%); transition: transform 0.3s ease;
+    display: flex; align-items: center; gap: 10px; min-width: 300px;
+  }
+  .toast.show { transform: translateX(0); }
+  .toast.success { background: linear-gradient(135deg, #10b981, #059669); }
+  .toast.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+  .toast.info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+  .toast.warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+  /* Animated Counter */
+  .counter { display: inline-block; }
+
+  /* Loading Spinner */
+  .spinner { animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  /* Tooltip */
+  .tooltip { position: relative; }
+  .tooltip::after {
+    content: attr(data-tip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    padding: 6px 12px; background: #1e293b; color: white; font-size: 11px; border-radius: 8px;
+    white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .tooltip:hover::after { opacity: 1; }
+
+  /* Progress Bar Animation */
+  .progress-animated { transition: width 1s ease-out; }
+
+  /* Skeleton Loading */
+  .skeleton {
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%; animation: skeleton 1.5s infinite;
+  }
+  @keyframes skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  /* Chart Container Heights */
+  #costChart { min-height: 160px; max-height: 160px; }
+  #riskChart { width: 100% !important; height: 100% !important; }
+
+  /* Agent Collaboration Cards */
+  .agent-card {
+    background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; text-align: center;
+    transition: all 0.3s ease; position: relative; overflow: hidden;
+  }
+  .agent-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: #e2e8f0; transition: background 0.3s ease;
+  }
+  .agent-card.active { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1), 0 4px 12px rgba(59,130,246,0.15); }
+  .agent-card.active::before { background: linear-gradient(90deg, #3b82f6, #8b5cf6); }
+  .agent-card.done { border-color: #10b981; }
+  .agent-card.done::before { background: #10b981; }
+
+  .agent-icon-wrap {
+    width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center;
+    justify-content: center; margin: 0 auto 10px; transition: transform 0.3s ease;
+  }
+  .agent-card.active .agent-icon-wrap { transform: scale(1.1); animation: agentPulse 1.5s infinite; }
+
+  @keyframes agentPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(59,130,246,0); }
+  }
+
+  .agent-name { font-size: 12px; font-weight: 600; color: #1e293b; margin-bottom: 2px; }
+  .agent-desc { font-size: 10px; color: #94a3b8; margin-bottom: 8px; }
+
+  .agent-status {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 11px; color: #64748b; padding: 4px 8px; border-radius: 8px;
+    background: #f8fafc; transition: all 0.3s ease;
+  }
+  .agent-card.active .agent-status { background: #eff6ff; color: #2563eb; }
+  .agent-card.done .agent-status { background: #ecfdf5; color: #059669; }
+
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+  }
+  .status-dot.idle { background: #94a3b8; }
+  .status-dot.active { background: #3b82f6; animation: dotBlink 1s infinite; }
+  .status-dot.done { background: #10b981; }
+
+  @keyframes dotBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .agent-task {
+    font-size: 10px; color: #3b82f6; margin-top: 8px; min-height: 14px;
+    opacity: 0; transition: opacity 0.3s ease;
+  }
+  .agent-card.active .agent-task { opacity: 1; }
+
+  .agent-arrow {
+    display: flex; align-items: center; justify-content: center; opacity: 0.3;
+    transition: all 0.3s ease;
+  }
+  .agent-arrow.active { opacity: 1; }
+  .agent-arrow.active svg { color: #3b82f6; filter: drop-shadow(0 0 4px rgba(59,130,246,0.3)); }
+
+  .agent-arrow-down {
+    display: flex; align-items: center; justify-content: center; opacity: 0.3;
+    transition: all 0.3s ease;
+  }
+  .agent-arrow-down.active { opacity: 1; }
+  .agent-arrow-down.active svg { color: #3b82f6; filter: drop-shadow(0 0 4px rgba(59,130,246,0.3)); }
+</style>
+</head>
+<body class="flex h-screen">
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- AI Chat Button -->
+<button class="ai-chat-btn" onclick="toggleChat()" title="AI 智能助手">
+  <svg id="chatIcon" class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+  </svg>
+</button>
+
+<!-- AI Chat Window -->
+<div class="ai-chat-window" id="aiChatWindow">
+  <div class="ai-chat-header">
+    <div>
+      <h3 class="font-semibold text-sm">PM Insight AI 助手</h3>
+      <div class="ai-status-badge online mt-1">
+        <span class="w-2 h-2 bg-green-400 rounded-full pulse-dot"></span>
+        <span>DeepSeek V4 Flash</span>
+      </div>
+    </div>
+    <button onclick="toggleChat()" class="text-white/80 hover:text-white">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="ai-chat-messages" id="chatMessages">
+    <div class="ai-message assistant">
+      <div class="avatar">🤖</div>
+      <div class="bubble">
+        <p>你好！我是 PM Insight AI 助手，基于 DeepSeek V4 Flash 模型。</p>
+        <p class="mt-2">我可以帮你：</p>
+        <ul class="mt-1 text-xs space-y-1">
+          <li>• 分析项目风险和健康度</li>
+          <li>• 回答项目状态问题</li>
+          <li>• 生成诊断报告</li>
+          <li>• 提供改进建议</li>
+        </ul>
+      </div>
+    </div>
+    <div class="ai-quick-actions">
+      <button onclick="sendQuickMessage('分析P002项目的风险')">📊 P002风险</button>
+      <button onclick="sendQuickMessage('哪些项目需要重点关注？')">⚠️ 重点关注</button>
+      <button onclick="sendQuickMessage('生成月度经营分析报告')">📋 月报</button>
+      <button onclick="sendQuickMessage('P005的进度如何？')">⏱️ P005进度</button>
+      <button onclick="sendQuickMessage('P001项目分析')">🔍 P001分析</button>
+      <button onclick="sendQuickMessage('如何降低项目风险？')">🛡️ 风险建议</button>
+    </div>
+  </div>
+  <div class="ai-chat-input">
+    <input type="text" id="chatInput" placeholder="输入问题..." onkeydown="if(event.key==='Enter')sendMessage()">
+    <button onclick="sendMessage()" id="sendBtn">发送</button>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<aside class="w-64 glass-dark flex flex-col flex-shrink-0 h-screen sticky top-0 z-50">
+  <div class="p-6">
+    <div class="flex items-center gap-3 mb-1">
+      <div class="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      </div>
+      <div>
+        <h1 class="text-white font-bold text-sm">PM Insight Copilot</h1>
+        <p class="text-surface-400 text-xs">项目经理智能副驾驶</p>
+      </div>
+    </div>
+  </div>
+  <nav class="flex-1 px-4 space-y-1">
+    <a href="#" class="sidebar-link active" onclick="showPage('dashboard')" data-page="dashboard">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+      经营驾驶舱
+    </a>
+    <a href="#" class="sidebar-link" onclick="showPage('projects')" data-page="projects">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+      项目全景
+    </a>
+    <a href="#" class="sidebar-link" onclick="showPage('risk')" data-page="risk">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+      风险分析
+    </a>
+    <a href="#" class="sidebar-link" onclick="showPage('reports')" data-page="reports">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      报告中心
+    </a>
+    <a href="#" class="sidebar-link" onclick="showPage('review')" data-page="review">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      审核中心
+    </a>
+    <a href="#" class="sidebar-link" onclick="showPage('knowledge')" data-page="knowledge">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+      知识库
+    </a>
+  </nav>
+  <div class="p-4">
+    <div class="glass rounded-xl p-3">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg gradient-brand flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </div>
+        <div>
+          <p class="text-white text-xs font-medium">项目经理</p>
+          <p class="text-surface-400 text-xs">在线</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto">
+  <!-- Top Bar -->
+  <header class="sticky top-0 z-40 glass border-b border-surface-200 px-8 py-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 id="pageTitle" class="text-xl font-bold text-surface-900">企业经营驾驶舱</h2>
+        <p id="pageSubtitle" class="text-sm text-surface-500">实时项目经营状态总览</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="relative">
+          <input type="text" id="searchInput" placeholder="输入项目编号，如 P002..." class="w-80 px-4 py-2.5 pl-10 rounded-xl border border-surface-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" onkeydown="if(event.key==='Enter')searchProject()">
+          <svg class="w-5 h-5 text-surface-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <button onclick="searchProject()" class="px-4 py-2.5 gradient-brand text-white rounded-xl text-sm font-medium hover:opacity-90 transition">AI 搜索</button>
+        <button onclick="showPage('detail', 'P002')" class="px-4 py-2.5 bg-surface-100 text-surface-700 rounded-xl text-sm font-medium hover:bg-surface-200 transition">快速体验: P002</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="p-8">
+
+<!-- ========== Dashboard Page ========== -->
+<div id="page-dashboard" class="page active fade-in">
+  <!-- Workflow Pipeline -->
+  <div class="card p-6 mb-8" style="background: linear-gradient(135deg, #f0f9ff 0%, #f5f3ff 50%, #fdf2f8 100%); border: 1px solid #e0e7ff;">
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h3 class="font-bold text-surface-900 text-lg">AI 工作流全景</h3>
+        <p class="text-xs text-surface-500 mt-1">材料 → 数据 → 规则 → 报告 → 人工复核 · 5个Agent协作完成</p>
+      </div>
+      <span class="px-3 py-1.5 rounded-lg bg-white/80 text-brand-700 text-xs font-medium border border-brand-200">端到端可追溯</span>
+    </div>
+    <div class="flex items-stretch gap-0">
+      <!-- Step 1 -->
+      <div class="flex-1 cursor-pointer group" onclick="showPage('projects')">
+        <div class="flex flex-col items-center">
+          <div class="w-14 h-14 rounded-2xl bg-blue-500 flex items-center justify-center mb-3 shadow-lg shadow-blue-200 group-hover:scale-110 transition">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <p class="text-xs font-bold text-surface-900">1. 需求采集</p>
+          <p class="text-[10px] text-blue-600 font-medium mt-0.5">Project Intelligence</p>
+          <p class="text-[10px] text-surface-400 mt-1 text-center">客户原话 + 项目数据<br>→ 项目画像</p>
+        </div>
+      </div>
+      <!-- Arrow 1 -->
+      <div class="flex items-center px-1">
+        <svg class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+      </div>
+      <!-- Step 2 -->
+      <div class="flex-1 cursor-pointer group" onclick="showPage('risk')">
+        <div class="flex flex-col items-center">
+          <div class="w-14 h-14 rounded-2xl bg-red-500 flex items-center justify-center mb-3 shadow-lg shadow-red-200 group-hover:scale-110 transition">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+          </div>
+          <p class="text-xs font-bold text-surface-900">2. 风险分析</p>
+          <p class="text-[10px] text-red-600 font-medium mt-0.5">Risk Agent</p>
+          <p class="text-[10px] text-surface-400 mt-1 text-center">项目数据 + 规则清单<br>→ 风险 + 证据链</p>
+        </div>
+      </div>
+      <!-- Arrow 2 -->
+      <div class="flex items-center px-1">
+        <svg class="w-6 h-6 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+      </div>
+      <!-- Step 3 -->
+      <div class="flex-1 cursor-pointer group" onclick="showPage('knowledge')">
+        <div class="flex flex-col items-center">
+          <div class="w-14 h-14 rounded-2xl bg-purple-500 flex items-center justify-center mb-3 shadow-lg shadow-purple-200 group-hover:scale-110 transition">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          </div>
+          <p class="text-xs font-bold text-surface-900">3. 知识检索</p>
+          <p class="text-[10px] text-purple-600 font-medium mt-0.5">Knowledge Agent</p>
+          <p class="text-[10px] text-surface-400 mt-1 text-center">历史案例 + SOP + 模板<br>→ 经验匹配</p>
+        </div>
+      </div>
+      <!-- Arrow 3 -->
+      <div class="flex items-center px-1">
+        <svg class="w-6 h-6 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+      </div>
+      <!-- Step 4 -->
+      <div class="flex-1 cursor-pointer group" onclick="showPage('reports')">
+        <div class="flex flex-col items-center">
+          <div class="w-14 h-14 rounded-2xl bg-emerald-500 flex items-center justify-center mb-3 shadow-lg shadow-emerald-200 group-hover:scale-110 transition">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <p class="text-xs font-bold text-surface-900">4. 报告生成</p>
+          <p class="text-[10px] text-emerald-600 font-medium mt-0.5">Report Agent</p>
+          <p class="text-[10px] text-surface-400 mt-1 text-center">风险 + 知识 + 模板<br>→ 诊断报告</p>
+        </div>
+      </div>
+      <!-- Arrow 4 -->
+      <div class="flex items-center px-1">
+        <svg class="w-6 h-6 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+      </div>
+      <!-- Step 5 -->
+      <div class="flex-1 cursor-pointer group" onclick="showPage('review')">
+        <div class="flex flex-col items-center">
+          <div class="w-14 h-14 rounded-2xl bg-amber-500 flex items-center justify-center mb-3 shadow-lg shadow-amber-200 group-hover:scale-110 transition">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+          <p class="text-xs font-bold text-surface-900">5. 人工复核</p>
+          <p class="text-[10px] text-amber-600 font-medium mt-0.5">Review Agent</p>
+          <p class="text-[10px] text-surface-400 mt-1 text-center">规则冲突 + 敏感内容<br>→ 人工确认发布</p>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 pt-4 border-t border-indigo-100 flex items-center justify-between">
+      <div class="flex items-center gap-6 text-[10px] text-surface-500">
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span>输入：客户需求、项目数据</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-400"></span>规则：风险规则库、计算公式</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-400"></span>知识：历史案例、SOP、模板</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span>约束：财务/验收需人工确认</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Agent Collaboration Visualization -->
+  <div class="card p-6 mb-8">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h3 class="font-semibold text-surface-900">多 Agent 协同工作流</h3>
+        <p class="text-xs text-surface-500 mt-1">5个AI Agent协作完成项目分析、风险评估、报告生成和审核</p>
+      </div>
+      <button onclick="runAgentDemo()" class="px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        运行协同演示
+      </button>
+    </div>
+
+    <!-- Agent Pipeline Flow -->
+    <div class="relative mb-8" id="agentPipeline">
+      <svg class="absolute inset-0 w-full h-full pointer-events-none" style="z-index:0">
+        <defs>
+          <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#94a3b8"/>
+          </marker>
+          <marker id="arrowhead-active" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#3b82f6"/>
+          </marker>
+        </defs>
+      </svg>
+
+      <div class="grid grid-cols-5 gap-4 relative z-10">
+        <div class="agent-card" id="agent1">
+          <div class="agent-icon-wrap bg-blue-500">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+          </div>
+          <p class="agent-name">Project Intelligence</p>
+          <p class="agent-desc">项目画像 · 状态整合</p>
+          <div class="agent-status" id="agent1Status"><span class="status-dot idle"></span><span>待机</span></div>
+          <div class="agent-task" id="agent1Task"></div>
+        </div>
+        <div class="flex items-center justify-center"><div class="agent-arrow" id="arrow1"><svg class="w-8 h-8 text-surface-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg></div></div>
+        <div class="agent-card" id="agent2">
+          <div class="agent-icon-wrap bg-purple-500">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          </div>
+          <p class="agent-name">Knowledge Agent</p>
+          <p class="agent-desc">RAG检索 · 案例匹配</p>
+          <div class="agent-status" id="agent2Status"><span class="status-dot idle"></span><span>待机</span></div>
+          <div class="agent-task" id="agent2Task"></div>
+        </div>
+        <div class="flex items-center justify-center"><div class="agent-arrow" id="arrow2"><svg class="w-8 h-8 text-surface-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg></div></div>
+        <div class="agent-card" id="agent3">
+          <div class="agent-icon-wrap bg-red-500">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+          </div>
+          <p class="agent-name">Risk Agent</p>
+          <p class="agent-desc">风险评估 · 证据链</p>
+          <div class="agent-status" id="agent3Status"><span class="status-dot idle"></span><span>待机</span></div>
+          <div class="agent-task" id="agent3Task"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-5 gap-4 mt-4 relative z-10">
+        <div class="col-start-1 flex items-center justify-center"><div class="agent-arrow-down" id="arrow3"><svg class="w-8 h-8 text-surface-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg></div></div>
+        <div></div><div></div><div></div><div></div>
+      </div>
+
+      <div class="grid grid-cols-5 gap-4 mt-4 relative z-10">
+        <div class="agent-card" id="agent4">
+          <div class="agent-icon-wrap bg-emerald-500">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <p class="agent-name">Report Agent</p>
+          <p class="agent-desc">报告生成 · 可视化</p>
+          <div class="agent-status" id="agent4Status"><span class="status-dot idle"></span><span>待机</span></div>
+          <div class="agent-task" id="agent4Task"></div>
+        </div>
+        <div class="flex items-center justify-center"><div class="agent-arrow" id="arrow4"><svg class="w-8 h-8 text-surface-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg></div></div>
+        <div class="agent-card" id="agent5">
+          <div class="agent-icon-wrap bg-amber-500">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <p class="agent-name">Review Agent</p>
+          <p class="agent-desc">合规审核 · 人工确认</p>
+          <div class="agent-status" id="agent5Status"><span class="status-dot idle"></span><span>待机</span></div>
+          <div class="agent-task" id="agent5Task"></div>
+        </div>
+        <div></div><div></div>
+      </div>
+    </div>
+
+    <!-- Agent Activity Log -->
+    <div class="border-t border-surface-100 pt-4">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-sm font-medium text-surface-700">Agent 活动日志</h4>
+        <button onclick="clearAgentLog()" class="text-xs text-surface-400 hover:text-surface-600 transition">清空</button>
+      </div>
+      <div id="agentLog" class="space-y-2 max-h-48 overflow-y-auto">
+        <div class="flex items-start gap-3 p-2 rounded-lg bg-surface-50 text-xs">
+          <span class="text-surface-400 whitespace-nowrap">系统</span>
+          <span class="text-surface-600">所有 Agent 已就绪，等待任务触发</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="grid grid-cols-4 gap-6 mb-8">
+    <div class="card stat-card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center">
+          <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        </div>
+        <span class="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg font-medium">+2 本月</span>
+      </div>
+      <p class="text-3xl font-bold text-surface-900">8</p>
+      <p class="text-sm text-surface-500 mt-1">项目总数</p>
+    </div>
+    <div class="card stat-card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
+          <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+        </div>
+        <span class="text-xs text-red-600 bg-red-50 px-2 py-1 rounded-lg font-medium pulse-dot">需关注</span>
+      </div>
+      <p class="text-3xl font-bold text-red-600">2</p>
+      <p class="text-sm text-surface-500 mt-1">高风险项目</p>
+    </div>
+    <div class="card stat-card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
+          <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <span class="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg font-medium">健康</span>
+      </div>
+      <p class="text-3xl font-bold text-surface-900">23.8<span class="text-lg text-surface-400">%</span></p>
+      <p class="text-sm text-surface-500 mt-1">平均利润率</p>
+    </div>
+    <div class="card stat-card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center">
+          <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <span class="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-lg font-medium">预警</span>
+      </div>
+      <p class="text-3xl font-bold text-amber-600">3</p>
+      <p class="text-sm text-surface-500 mt-1">延期预警项目</p>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="grid grid-cols-2 gap-6 mb-8">
+    <!-- Risk Distribution Chart -->
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h3 class="font-semibold text-surface-900">项目风险分布</h3>
+          <p class="text-xs text-surface-500 mt-1">基于AI健康度评分的项目风险等级分布</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-xs font-medium">高风险 2个</span>
+          <span class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-xs font-medium">中风险 3个</span>
+          <span class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-medium">低风险 3个</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-8">
+        <div class="w-48 h-48 relative">
+          <canvas id="riskChart"></canvas>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span class="text-3xl font-bold text-surface-900">8</span>
+            <span class="text-xs text-surface-500">在管项目</span>
+          </div>
+        </div>
+        <div class="flex-1 space-y-4">
+          <div class="flex items-center justify-between p-3 rounded-xl bg-red-50 border border-red-100 hover:bg-red-100 transition cursor-pointer" onclick="showPage('risk')">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-red-500"></div>
+              <div>
+                <p class="text-sm font-medium text-red-900">高风险</p>
+                <p class="text-xs text-red-600">P002, P005</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-lg font-bold text-red-600">2</span>
+              <p class="text-xs text-red-500">需立即处理</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-100 hover:bg-amber-100 transition cursor-pointer" onclick="showPage('risk')">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+              <div>
+                <p class="text-sm font-medium text-amber-900">中风险</p>
+                <p class="text-xs text-amber-600">P001, P006, P008</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-lg font-bold text-amber-600">3</span>
+              <p class="text-xs text-amber-500">需密切关注</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition cursor-pointer" onclick="showPage('risk')">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+              <div>
+                <p class="text-sm font-medium text-emerald-900">低风险</p>
+                <p class="text-xs text-emerald-600">P003, P004, P007</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-lg font-bold text-emerald-600">3</span>
+              <p class="text-xs text-emerald-500">运行良好</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cost vs Budget Chart -->
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h3 class="font-semibold text-surface-900">成本 vs 预算对比</h3>
+          <p class="text-xs text-surface-500 mt-1">各项目预算与实际成本对比分析</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-xs font-medium">超预算 1个</span>
+          <span class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-xs font-medium">预警 2个</span>
+        </div>
+      </div>
+      <canvas id="costChart" height="160"></canvas>
+      <div class="mt-4 pt-4 border-t border-surface-100">
+        <div class="flex items-center justify-between text-sm">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+            <span class="text-surface-600">总预算: <strong class="text-surface-900">277万</strong></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+            <span class="text-surface-600">总成本: <strong class="text-surface-900">201万</strong></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-purple-500"></div>
+            <span class="text-surface-600">整体利润率: <strong class="text-purple-600">27.4%</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Risk Ranking -->
+  <div class="card p-6 mb-8">
+    <h3 class="font-semibold text-surface-900 mb-4">风险排行榜</h3>
+    <div class="space-y-3" id="riskRanking"></div>
+  </div>
+</div>
+
+<!-- ========== Projects Page ========== -->
+<div id="page-projects" class="page fade-in">
+  <div class="grid grid-cols-2 gap-6" id="projectCards"></div>
+</div>
+
+<!-- ========== Project Detail Page ========== -->
+<div id="page-detail" class="page fade-in">
+  <div id="projectDetail"></div>
+</div>
+
+<!-- ========== Risk Page ========== -->
+<div id="page-risk" class="page fade-in">
+  <div class="grid grid-cols-3 gap-6 mb-8">
+    <div class="card p-6 border-l-4 border-red-500">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="font-semibold text-surface-900">高风险</h4>
+        <span class="text-2xl font-bold text-red-600">2</span>
+      </div>
+      <p class="text-sm text-surface-500">P002, P005</p>
+    </div>
+    <div class="card p-6 border-l-4 border-amber-500">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="font-semibold text-surface-900">中风险</h4>
+        <span class="text-2xl font-bold text-amber-600">3</span>
+      </div>
+      <p class="text-sm text-surface-500">P001, P006, P008</p>
+    </div>
+    <div class="card p-6 border-l-4 border-emerald-500">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="font-semibold text-surface-900">低风险</h4>
+        <span class="text-2xl font-bold text-emerald-600">3</span>
+      </div>
+      <p class="text-sm text-surface-500">P003, P004, P007</p>
+    </div>
+  </div>
+  <div id="riskDetails"></div>
+</div>
+
+<!-- ========== Reports Page ========== -->
+<div id="page-reports" class="page fade-in">
+  <div class="grid grid-cols-3 gap-6 mb-8">
+    <div class="card p-6 cursor-pointer hover:ring-2 hover:ring-brand-500 transition" onclick="showReport('diagnosis')">
+      <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
+        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+      <h3 class="font-semibold text-surface-900 mb-2">项目经营诊断报告</h3>
+      <p class="text-sm text-surface-500">AI 自动生成，含风险分析、改进建议、2-6周验证路径</p>
+    </div>
+    <div class="card p-6 cursor-pointer hover:ring-2 hover:ring-brand-500 transition" onclick="showReport('monthly')">
+      <div class="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center mb-4">
+        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      </div>
+      <h3 class="font-semibold text-surface-900 mb-2">月度经营分析报告</h3>
+      <p class="text-sm text-surface-500">汇总当月项目状态、成本趋势、风险预警</p>
+    </div>
+    <div class="card p-6 cursor-pointer hover:ring-2 hover:ring-brand-500 transition" onclick="showReport('review')">
+      <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
+        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      </div>
+      <h3 class="font-semibold text-surface-900 mb-2">项目复盘报告</h3>
+      <p class="text-sm text-surface-500">历史项目经验总结、最佳实践提炼</p>
+    </div>
+  </div>
+  <div id="reportContent" class="card p-8"></div>
+</div>
+
+<!-- ========== Review Page ========== -->
+<div id="page-review" class="page fade-in">
+  <div id="reviewContent"></div>
+</div>
+
+<!-- ========== Knowledge Page ========== -->
+<div id="page-knowledge" class="page fade-in">
+  <div class="grid grid-cols-2 gap-6 mb-8">
+    <div class="card p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        </div>
+        <h3 class="font-semibold text-surface-900">历史案例库</h3>
+      </div>
+      <div class="space-y-3">
+        <div class="p-3 rounded-lg bg-surface-50 hover:bg-surface-100 cursor-pointer transition">
+          <p class="text-sm font-medium text-surface-900">数字化园区平台实施案例</p>
+          <p class="text-xs text-surface-500 mt-1">科技服务 | 成本超支20% | 已解决</p>
+        </div>
+        <div class="p-3 rounded-lg bg-surface-50 hover:bg-surface-100 cursor-pointer transition">
+          <p class="text-sm font-medium text-surface-900">数据治理项目交付复盘</p>
+          <p class="text-xs text-surface-500 mt-1">数据治理 | 延期15天 | 已复盘</p>
+        </div>
+        <div class="p-3 rounded-lg bg-surface-50 hover:bg-surface-100 cursor-pointer transition">
+          <p class="text-sm font-medium text-surface-900">高校信息系统集成项目</p>
+          <p class="text-xs text-surface-500 mt-1">系统集成 | 客户变更频繁 | 已沉淀SOP</p>
+        </div>
+      </div>
+    </div>
+    <div class="card p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
+          <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <h3 class="font-semibold text-surface-900">风险规则库</h3>
+      </div>
+      <div class="space-y-3">
+        <div class="p-3 rounded-lg bg-red-50 border border-red-100">
+          <p class="text-sm font-medium text-red-900">成本使用率 > 90% 且未验收</p>
+          <p class="text-xs text-red-600 mt-1">触发条件：已发生成本/预算 > 0.9</p>
+        </div>
+        <div class="p-3 rounded-lg bg-amber-50 border border-amber-100">
+          <p class="text-sm font-medium text-amber-900">周期使用率 > 90% 且未验收</p>
+          <p class="text-xs text-amber-600 mt-1">触发条件：已用天数/计划周期 > 0.9</p>
+        </div>
+        <div class="p-3 rounded-lg bg-orange-50 border border-orange-100">
+          <p class="text-sm font-medium text-orange-900">质量问题数 >= 3 或满意度 < 3.8</p>
+          <p class="text-xs text-orange-600 mt-1">触发条件：需人工复核</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card p-6">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+      </div>
+      <h3 class="font-semibold text-surface-900">项目SOP库</h3>
+    </div>
+    <div class="grid grid-cols-4 gap-4">
+      <div class="p-4 rounded-xl border border-surface-200 hover:border-brand-300 cursor-pointer transition">
+        <p class="text-sm font-medium text-surface-900">项目启动SOP</p>
+        <p class="text-xs text-surface-500 mt-1">包含立项、Kick-off、资料清单</p>
+      </div>
+      <div class="p-4 rounded-xl border border-surface-200 hover:border-brand-300 cursor-pointer transition">
+        <p class="text-sm font-medium text-surface-900">需求变更SOP</p>
+        <p class="text-xs text-surface-500 mt-1">变更流程、影响评估、审批节点</p>
+      </div>
+      <div class="p-4 rounded-xl border border-surface-200 hover:border-brand-300 cursor-pointer transition">
+        <p class="text-sm font-medium text-surface-900">验收交付SOP</p>
+        <p class="text-xs text-surface-500 mt-1">验收清单、材料模板、签收流程</p>
+      </div>
+      <div class="p-4 rounded-xl border border-surface-200 hover:border-brand-300 cursor-pointer transition">
+        <p class="text-sm font-medium text-surface-900">项目复盘SOP</p>
+        <p class="text-xs text-surface-500 mt-1">复盘模板、经验沉淀、知识归档</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+  </div>
+</main>
+
+<script>
+// ==================== DATA ====================
+const projects = [
+  { id:'P001', name:'智慧园区管理平台', client:'科技服务', stage:'验收前', budget:42, cost:36, planDays:60, usedDays:55, risk:'中', quality:2, satisfaction:4.2, feedback:'验收材料准备中，需确认最终模板版本' },
+  { id:'P002', name:'数字化咨询交付项目', client:'咨询交付', stage:'执行中', budget:28, cost:31, planDays:45, usedDays:42, risk:'高', quality:5, satisfaction:3.1, feedback:'报告修改次数多，成本超预算仍未提前预警' },
+  { id:'P003', name:'检测数据治理系统', client:'检测服务', stage:'执行中', budget:35, cost:18, planDays:50, usedDays:22, risk:'低', quality:1, satisfaction:4.5, feedback:'希望复用历史检测项目模板' },
+  { id:'P004', name:'展览数字化策划平台', client:'展览策划', stage:'启动', budget:20, cost:5, planDays:35, usedDays:8, risk:'低', quality:0, satisfaction:4.4, feedback:'项目刚启动，进展顺利' },
+  { id:'P005', name:'企业数据中台建设', client:'科技服务', stage:'执行中', budget:55, cost:49, planDays:75, usedDays:70, risk:'高', quality:4, satisfaction:3.4, feedback:'关键节点延期，客户要求解释成本变化' },
+  { id:'P006', name:'运营咨询与优化项目', client:'咨询交付', stage:'验收前', budget:31, cost:25, planDays:40, usedDays:39, risk:'中', quality:3, satisfaction:3.8, feedback:'验收材料版本不一致，需要确认最终模板' },
+  { id:'P007', name:'环境检测平台升级', client:'检测服务', stage:'启动', budget:18, cost:4, planDays:30, usedDays:6, risk:'低', quality:0, satisfaction:4.6, feedback:'项目进展顺利，客户配合度高' },
+  { id:'P008', name:'高校信息化集成项目', client:'科技服务', stage:'执行中', budget:48, cost:33, planDays:65, usedDays:40, risk:'中', quality:2, satisfaction:4.0, feedback:'需求基本稳定，进入开发阶段' }
+];
+
+function calcHealth(p) {
+  // Authoritative health scores from diagnosis report
+  const healthScores = { P001:65, P002:35, P003:92, P004:95, P005:45, P006:60, P007:95, P008:78 };
+  if (healthScores[p.id] !== undefined) return healthScores[p.id];
+  // Fallback calculation for any new projects
+  const costRate = p.cost / p.budget;
+  const timeRate = p.usedDays / p.planDays;
+  let score = 100;
+  if (costRate > 1) score -= 25; else if (costRate > 0.9) score -= 12; else if (costRate > 0.8) score -= 5;
+  if (timeRate > 0.95) score -= 15; else if (timeRate > 0.9) score -= 10; else if (timeRate > 0.8) score -= 5;
+  if (p.quality >= 5) score -= 15; else if (p.quality >= 3) score -= 10; else if (p.quality >= 2) score -= 5;
+  if (p.satisfaction < 3.5) score -= 12; else if (p.satisfaction < 3.8) score -= 8; else if (p.satisfaction < 4.0) score -= 3;
+  if (p.risk === '高') score -= 8; else if (p.risk === '中') score -= 3;
+  return Math.max(0, Math.min(100, score));
+}
+
+function getRiskLevel(score) {
+  if (score < 50) return { level:'高风险', cls:'risk-high', color:'#ef4444' };
+  if (score < 70) return { level:'中风险', cls:'risk-medium', color:'#f59e0b' };
+  return { level:'低风险', cls:'risk-low', color:'#10b981' };
+}
+
+// ==================== NAVIGATION ====================
+function showPage(page, param) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  const link = document.querySelector(`[data-page="${page}"]`);
+  if (link) link.classList.add('active');
+  const titles = {
+    dashboard: ['企业经营驾驶舱','实时项目经营状态总览'],
+    projects: ['项目全景','所有项目健康度与风险概览'],
+    risk: ['风险分析中心','AI 驱动的多维度风险分析'],
+    reports: ['报告中心','AI 自动生成经营诊断报告'],
+    review: ['人机协同审核中心','AI 建议 + 人工确认'],
+    knowledge: ['知识库','历史案例 · SOP · 风险规则 · 最佳实践'],
+    detail: ['项目详情','项目全景画像与 AI 分析']
+  };
+  document.getElementById('pageTitle').textContent = titles[page]?.[0] || '';
+  document.getElementById('pageSubtitle').textContent = titles[page]?.[1] || '';
+  if (page === 'detail' && param) renderProjectDetail(param);
+  if (page === 'projects') renderProjectCards();
+  if (page === 'risk') renderRiskDetails();
+  if (page === 'reports') showReport('diagnosis');
+  if (page === 'review') renderReviewCenter();
+}
+
+function searchProject() {
+  const val = document.getElementById('searchInput').value.trim().toUpperCase();
+  const p = projects.find(x => x.id === val);
+  if (p) { showPage('detail', p.id); }
+  else { alert('未找到项目 ' + val + '，请输入有效编号如 P001-P008'); }
+}
+
+// ==================== DASHBOARD ====================
+function renderDashboard() {
+  // Risk Chart - Professional Doughnut with center text
+  const riskCtx = document.getElementById('riskChart').getContext('2d');
+  new Chart(riskCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['高风险', '中风险', '低风险'],
+      datasets: [{
+        data: [2, 3, 3],
+        backgroundColor: [
+          '#ef4444',
+          '#f59e0b',
+          '#10b981'
+        ],
+        borderWidth: 0,
+        hoverOffset: 12,
+        borderRadius: 4,
+        spacing: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '72%',
+      animation: {
+        animateScale: true,
+        animateRotate: true,
+        duration: 1500,
+        easing: 'easeOutQuart'
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e293b',
+          titleFont: { size: 12, weight: '600' },
+          bodyFont: { size: 11 },
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = ((context.parsed / total) * 100).toFixed(0);
+              return ` ${context.label}: ${context.parsed}个 (${percentage}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Cost Chart - Enhanced Bar Chart with gradients
+  const costCtx = document.getElementById('costChart').getContext('2d');
+
+  // Create gradients
+  const budgetGradient = costCtx.createLinearGradient(0, 0, 0, 160);
+  budgetGradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
+  budgetGradient.addColorStop(1, 'rgba(59, 130, 246, 0.05)');
+
+  const costGradient = costCtx.createLinearGradient(0, 0, 0, 160);
+  costGradient.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
+  costGradient.addColorStop(1, 'rgba(16, 185, 129, 0.05)');
+
+  const costOverGradient = costCtx.createLinearGradient(0, 0, 0, 160);
+  costOverGradient.addColorStop(0, 'rgba(239, 68, 68, 0.4)');
+  costOverGradient.addColorStop(1, 'rgba(239, 68, 68, 0.05)');
+
+  new Chart(costCtx, {
+    type: 'bar',
+    data: {
+      labels: projects.map(p => p.id),
+      datasets: [
+        {
+          label: '预算(万)',
+          data: projects.map(p => p.budget),
+          backgroundColor: budgetGradient,
+          borderColor: '#3b82f6',
+          borderWidth: 2,
+          borderRadius: 6,
+          borderSkipped: false
+        },
+        {
+          label: '已发生(万)',
+          data: projects.map(p => p.cost),
+          backgroundColor: projects.map(p => p.cost > p.budget ? costOverGradient : costGradient),
+          borderColor: projects.map(p => p.cost > p.budget ? '#ef4444' : '#10b981'),
+          borderWidth: 2,
+          borderRadius: 6,
+          borderSkipped: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: 1200,
+        easing: 'easeOutQuart'
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 11, weight: '500' } }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
+          ticks: {
+            font: { size: 11 },
+            callback: value => value + '万'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { padding: 16, usePointStyle: true, pointStyleWidth: 8, font: { size: 11 } }
+        },
+        tooltip: {
+          backgroundColor: '#1e293b',
+          titleFont: { size: 12, weight: '600' },
+          bodyFont: { size: 11 },
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            afterBody: function(context) {
+              const idx = context[0].dataIndex;
+              const p = projects[idx];
+              const rate = ((p.cost / p.budget) * 100).toFixed(1);
+              const status = p.cost > p.budget ? '已超预算' : rate > 90 ? '接近预警线' : '正常';
+              return `使用率: ${rate}%\n状态: ${status}`;
+            }
+          }
+        }
+      }
+    }
+  });
+  // Risk Ranking
+  const ranked = projects.map(p => ({ ...p, health: calcHealth(p) })).sort((a,b) => a.health - b.health);
+  document.getElementById('riskRanking').innerHTML = ranked.map((p,i) => {
+    const risk = getRiskLevel(p.health);
+    return `<div class="flex items-center justify-between p-4 rounded-xl ${i < 2 ? 'bg-red-50 border border-red-100' : i < 5 ? 'bg-amber-50 border border-amber-100' : 'bg-emerald-50 border border-emerald-100'}">
+      <div class="flex items-center gap-4">
+        <span class="w-8 h-8 rounded-lg ${i < 2 ? 'bg-red-500' : i < 5 ? 'bg-amber-500' : 'bg-emerald-500'} text-white flex items-center justify-center text-sm font-bold">${i+1}</span>
+        <div>
+          <p class="font-medium text-surface-900">${p.id} ${p.name}</p>
+          <p class="text-xs text-surface-500">${p.client} | ${p.stage}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="px-3 py-1 rounded-lg text-xs font-medium ${risk.cls}">${risk.level}</span>
+        <span class="text-2xl font-bold" style="color:${risk.color}">${p.health}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ==================== PROJECT CARDS ====================
+function renderProjectCards() {
+  document.getElementById('projectCards').innerHTML = projects.map(p => {
+    const health = calcHealth(p);
+    const risk = getRiskLevel(health);
+    const costRate = Math.round(p.cost/p.budget*100);
+    const timeRate = Math.round(p.usedDays/p.planDays*100);
+    const circumference = 2 * Math.PI * 34;
+    const offset = circumference - (health / 100) * circumference;
+    return `<div class="card p-6 cursor-pointer" onclick="showPage('detail','${p.id}')">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h3 class="font-bold text-lg text-surface-900">${p.id} ${p.name}</h3>
+          <p class="text-sm text-surface-500">${p.client} | ${p.stage}</p>
+        </div>
+        <div class="health-ring">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#e2e8f0" stroke-width="6"/>
+            <circle cx="40" cy="40" r="34" fill="none" stroke="${risk.color}" stroke-width="6" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round"/>
+          </svg>
+          <span class="value" style="color:${risk.color}">${health}</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <p class="text-xs text-surface-500">预算</p>
+          <p class="font-semibold">${p.budget}万</p>
+        </div>
+        <div>
+          <p class="text-xs text-surface-500">已发生</p>
+          <p class="font-semibold ${costRate > 90 ? 'text-red-600' : ''}">${p.cost}万</p>
+        </div>
+        <div>
+          <p class="text-xs text-surface-500">成本使用率</p>
+          <div class="flex items-center gap-2">
+            <div class="flex-1 h-2 bg-surface-100 rounded-full overflow-hidden">
+              <div class="h-full rounded-full ${costRate > 100 ? 'bg-red-500' : costRate > 90 ? 'bg-amber-500' : 'bg-emerald-500'}" style="width:${Math.min(costRate,100)}%"></div>
+            </div>
+            <span class="text-xs font-medium ${costRate > 100 ? 'text-red-600' : ''}">${costRate}%</span>
+          </div>
+        </div>
+        <div>
+          <p class="text-xs text-surface-500">周期使用率</p>
+          <div class="flex items-center gap-2">
+            <div class="flex-1 h-2 bg-surface-100 rounded-full overflow-hidden">
+              <div class="h-full rounded-full ${timeRate > 95 ? 'bg-red-500' : timeRate > 90 ? 'bg-amber-500' : 'bg-emerald-500'}" style="width:${Math.min(timeRate,100)}%"></div>
+            </div>
+            <span class="text-xs font-medium">${timeRate}%</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between pt-4 border-t border-surface-100">
+        <span class="px-3 py-1 rounded-lg text-xs font-medium ${risk.cls}">${risk.level}</span>
+        <span class="text-xs text-surface-500">满意度 ${p.satisfaction}/5.0</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ==================== PROJECT DETAIL ====================
+function renderProjectDetail(id) {
+  const p = projects.find(x => x.id === id);
+  if (!p) return;
+  const health = calcHealth(p);
+  const risk = getRiskLevel(health);
+  const costRate = (p.cost/p.budget*100).toFixed(1);
+  const timeRate = (p.usedDays/p.planDays*100).toFixed(1);
+  const profitRate = ((p.budget - p.cost) / p.budget * 100).toFixed(1);
+
+  const risks = [];
+  if (costRate > 90) risks.push({ type:'成本风险', level:'高', desc:`成本使用率已达${costRate}%${p.cost > p.budget ? '，已超预算'+(p.cost-p.budget)+'万' : ''}`, source:'项目经营样例数据.xlsx → 项目记录', rule:'成本使用率 > 90% 且未验收 → 标记成本风险' });
+  if (timeRate > 90) risks.push({ type:'进度风险', level:'高', desc:`周期使用率已达${timeRate}%，仅剩${p.planDays-p.usedDays}天`, source:'项目经营样例数据.xlsx → 项目记录', rule:'周期使用率 > 90% 且未验收 → 标记进度风险' });
+  if (p.quality >= 3) risks.push({ type:'质量风险', level:p.quality>=5?'高':'中', desc:`质量问题${p.quality}个，${p.quality>=3?'需人工复核':'需关注'}`, source:'项目经营样例数据.xlsx → 项目记录', rule:'质量问题数 >= 3 → 需要人工复核' });
+  if (p.satisfaction < 3.8) risks.push({ type:'客户满意度风险', level:p.satisfaction<3.5?'高':'中', desc:`客户满意度${p.satisfaction}，低于3.8阈值`, source:'项目经营样例数据.xlsx → 项目记录', rule:'满意度 < 3.8 → 需要人工复核' });
+
+  document.getElementById('projectDetail').innerHTML = `
+    <div class="flex items-center gap-4 mb-8">
+      <button onclick="showPage('projects')" class="text-surface-400 hover:text-surface-600 transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <div>
+        <h2 class="text-2xl font-bold text-surface-900">${p.id} ${p.name}</h2>
+        <p class="text-surface-500">${p.client} | ${p.stage}</p>
+      </div>
+      <span class="ml-auto px-4 py-2 rounded-xl text-sm font-medium ${risk.cls}">${risk.level} · ${health}分</span>
+      <button id="healthCheckBtn" onclick="runAIHealthCheck('${p.id}')" class="ai-health-btn">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        AI 健康体检
+      </button>
+    </div>
+
+    <div class="grid grid-cols-4 gap-6 mb-8">
+      <div class="card p-5">
+        <p class="text-sm text-surface-500 mb-1">预算</p>
+        <p class="text-2xl font-bold text-surface-900">${p.budget}<span class="text-sm text-surface-400">万</span></p>
+      </div>
+      <div class="card p-5">
+        <p class="text-sm text-surface-500 mb-1">已发生成本</p>
+        <p class="text-2xl font-bold ${p.cost>p.budget?'text-red-600':'text-surface-900'}">${p.cost}<span class="text-sm text-surface-400">万</span></p>
+      </div>
+      <div class="card p-5">
+        <p class="text-sm text-surface-500 mb-1">利润率</p>
+        <p class="text-2xl font-bold ${profitRate<0?'text-red-600':'text-emerald-600'}">${profitRate}<span class="text-sm">%</span></p>
+      </div>
+      <div class="card p-5">
+        <p class="text-sm text-surface-500 mb-1">客户满意度</p>
+        <p class="text-2xl font-bold ${p.satisfaction<3.8?'text-amber-600':'text-surface-900'}">${p.satisfaction}<span class="text-sm text-surface-400">/5.0</span></p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6 mb-8">
+      <div class="card p-6">
+        <h3 class="font-semibold text-surface-900 mb-4">成本与进度分析</h3>
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between text-sm mb-1"><span>成本使用率</span><span class="font-medium ${costRate>100?'text-red-600':costRate>90?'text-amber-600':'text-emerald-600'}">${costRate}%</span></div>
+            <div class="h-3 bg-surface-100 rounded-full overflow-hidden"><div class="h-full rounded-full ${costRate>100?'bg-red-500':costRate>90?'bg-amber-500':'bg-emerald-500'}" style="width:${Math.min(costRate,100)}%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-1"><span>周期使用率</span><span class="font-medium ${timeRate>95?'text-red-600':timeRate>90?'text-amber-600':'text-emerald-600'}">${timeRate}%</span></div>
+            <div class="h-3 bg-surface-100 rounded-full overflow-hidden"><div class="h-full rounded-full ${timeRate>95?'bg-red-500':timeRate>90?'bg-amber-500':'bg-emerald-500'}" style="width:${Math.min(timeRate,100)}%"></div></div>
+          </div>
+          <div class="pt-4 border-t border-surface-100">
+            <p class="text-sm text-surface-600"><strong>AI 判断：</strong>${costRate>100?'成本已超预算，需要立即介入。':costRate>90?'成本接近预算上限，建议密切关注。':'成本在可控范围内。'}${timeRate>95?' 进度严重滞后，仅剩'+(p.planDays-p.usedDays)+'天。':timeRate>90?' 进度紧张，需加速推进。':' 进度正常。'}</p>
+          </div>
+        </div>
+      </div>
+      <div class="card p-6">
+        <h3 class="font-semibold text-surface-900 mb-4">客户反馈</h3>
+        <div class="p-4 rounded-xl bg-surface-50 border border-surface-200">
+          <p class="text-sm text-surface-700">"${p.feedback}"</p>
+        </div>
+        <div class="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-100">
+          <p class="text-xs text-blue-700"><strong>Knowledge Agent 匹配：</strong>找到2个相似历史案例，建议参考"数字化园区平台实施案例"的变更管理经验。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-6 mb-8">
+      <h3 class="font-semibold text-surface-900 mb-4">AI 风险分析（证据链追溯）</h3>
+      ${risks.length === 0 ? '<p class="text-emerald-600">当前项目未发现显著风险。</p>' : risks.map(r => `
+        <div class="mb-4 p-4 rounded-xl border ${r.level==='高'?'border-red-200 bg-red-50':r.level==='中'?'border-amber-200 bg-amber-50':'border-surface-200'}">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-1 rounded text-xs font-medium ${r.level==='高'?'risk-high':r.level==='中'?'risk-medium':'risk-low'}">${r.level}风险</span>
+              <span class="font-medium text-surface-900">${r.type}</span>
+            </div>
+          </div>
+          <p class="text-sm text-surface-700 mb-3">${r.desc}</p>
+          <div class="evidence-chain pl-4 border-l-2 border-brand-300 space-y-2">
+            <div class="flex items-start gap-2">
+              <span class="text-xs text-brand-600 font-medium whitespace-nowrap">结论 →</span>
+              <span class="text-xs text-surface-600">${r.desc}</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-xs text-brand-600 font-medium whitespace-nowrap">规则 →</span>
+              <span class="text-xs text-surface-600">${r.rule}</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-xs text-brand-600 font-medium whitespace-nowrap">数据 →</span>
+              <span class="text-xs text-surface-600">预算${p.budget}万, 已发生${p.cost}万, 计划${p.planDays}天, 已用${p.usedDays}天, 质量问题${p.quality}个, 满意度${p.satisfaction}</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-xs text-brand-600 font-medium whitespace-nowrap">来源 →</span>
+              <span class="text-xs text-surface-600">${r.source}</span>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="card p-6 mb-8">
+      <h3 class="font-semibold text-surface-900 mb-4">AI 行动建议</h3>
+      <div class="space-y-3">
+        ${risks.map(r => `<div class="flex items-start gap-3 p-3 rounded-lg bg-brand-50 border border-brand-100">
+          <svg class="w-5 h-5 text-brand-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <div>
+            <p class="text-sm font-medium text-surface-900">${r.type}：${r.level==='高'?'立即处理':'密切关注'}</p>
+            <p class="text-xs text-surface-600 mt-1">${r.level==='高'?'建议在48小时内召开专项会议，制定应对方案。':'建议在周报中跟踪，必要时升级处理。'}</p>
+          </div>
+        </div>`).join('')}
+        <div class="flex items-start gap-3 p-3 rounded-lg bg-amber-50 border border-amber-100">
+          <svg class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+          <div>
+            <p class="text-sm font-medium text-surface-900">注意：以上建议需人工复核后执行</p>
+            <p class="text-xs text-surface-600 mt-1">涉及财务结论和客户承诺的内容，必须经项目经理确认后方可对外发布。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== AGENT COLLABORATION DEMO ====================
+let agentDemoRunning = false;
+
+function addAgentLog(agent, message) {
+  const log = document.getElementById('agentLog');
+  const colors = {
+    '系统': 'text-surface-400',
+    'Project Intelligence': 'text-blue-600',
+    'Knowledge Agent': 'text-purple-600',
+    'Risk Agent': 'text-red-600',
+    'Report Agent': 'text-emerald-600',
+    'Review Agent': 'text-amber-600'
+  };
+  const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const div = document.createElement('div');
+  div.className = 'flex items-start gap-3 p-2 rounded-lg bg-surface-50 text-xs animate-fadeIn';
+  div.innerHTML = `
+    <span class="${colors[agent] || 'text-surface-400'} whitespace-nowrap font-medium">${agent}</span>
+    <span class="text-surface-600 flex-1">${message}</span>
+    <span class="text-surface-300 whitespace-nowrap">${time}</span>
+  `;
+  log.insertBefore(div, log.firstChild);
+}
+
+function clearAgentLog() {
+  const log = document.getElementById('agentLog');
+  log.innerHTML = `
+    <div class="flex items-start gap-3 p-2 rounded-lg bg-surface-50 text-xs">
+      <span class="text-surface-400 whitespace-nowrap">系统</span>
+      <span class="text-surface-600">日志已清空，等待新任务</span>
+    </div>
+  `;
+}
+
+function setAgentState(agentNum, state, task) {
+  const card = document.getElementById('agent' + agentNum);
+  const status = document.getElementById('agent' + agentNum + 'Status');
+  const taskEl = document.getElementById('agent' + agentNum + 'Task');
+
+  card.className = 'agent-card ' + state;
+
+  if (state === 'active') {
+    status.innerHTML = '<span class="status-dot active"></span><span>运行中</span>';
+  } else if (state === 'done') {
+    status.innerHTML = '<span class="status-dot done"></span><span>已完成</span>';
+  } else {
+    status.innerHTML = '<span class="status-dot idle"></span><span>待机</span>';
+  }
+
+  if (task) taskEl.textContent = task;
+  else taskEl.textContent = '';
+}
+
+function setArrowState(arrowNum, active) {
+  const arrow = document.getElementById('arrow' + arrowNum);
+  if (arrow) arrow.className = active ? arrow.classList.contains('agent-arrow-down') ? 'agent-arrow-down active' : 'agent-arrow active' : arrow.classList.contains('agent-arrow-down') ? 'agent-arrow-down' : 'agent-arrow';
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function runAgentDemo() {
+  if (agentDemoRunning) return;
+  agentDemoRunning = true;
+
+  // Reset all agents
+  for (let i = 1; i <= 5; i++) setAgentState(i, '', '');
+  for (let i = 1; i <= 4; i++) setArrowState(i, false);
+
+  addAgentLog('系统', '收到任务：分析 P002 数字化咨询交付项目');
+  await sleep(800);
+
+  // Step 1: Project Intelligence Agent
+  setAgentState(1, 'active', '读取项目数据...');
+  addAgentLog('Project Intelligence', '开始读取 P002 项目档案...');
+  await sleep(1200);
+  addAgentLog('Project Intelligence', '已获取：预算28万，已发生31万，周期45天/已用42天');
+  await sleep(600);
+  addAgentLog('Project Intelligence', '生成项目画像：成本超预算，进度紧张，质量问题5个');
+  setAgentState(1, 'done', '项目画像已生成');
+  setArrowState(1, true);
+  await sleep(400);
+
+  // Step 2: Risk Agent (per workflow: N02 = A3)
+  setAgentState(3, 'active', '多维度风险分析...');
+  addAgentLog('Risk Agent', '开始成本风险分析：110.7% > 阈值90% → 高风险');
+  await sleep(800);
+  addAgentLog('Risk Agent', '进度风险分析：93.3% > 阈值90% → 高风险');
+  await sleep(600);
+  addAgentLog('Risk Agent', '质量风险分析：5个问题 >= 3 → 高风险');
+  await sleep(600);
+  addAgentLog('Risk Agent', '生成证据链：结论→规则→数据→来源文件，全部可追溯');
+  setAgentState(3, 'done', '风险等级：高');
+  setArrowState(2, true);
+  await sleep(400);
+
+  // Step 3: Knowledge Agent (per workflow: N03 = A2, uses risk results for retrieval)
+  setAgentState(2, 'active', 'RAG知识检索...');
+  addAgentLog('Knowledge Agent', '基于风险分析结果，检索历史案例库...');
+  await sleep(1000);
+  addAgentLog('Knowledge Agent', '找到2个相似案例：数字化园区平台(成本超支)、智慧工厂项目(需求变更)');
+  await sleep(600);
+  addAgentLog('Knowledge Agent', '匹配SOP：成本超支处理流程、客户沟通模板');
+  setAgentState(2, 'done', '已匹配3条知识');
+  setArrowState(1, true);
+  await sleep(400);
+
+  // Step 4: Report Agent
+  setAgentState(4, 'active', '生成诊断报告...');
+  addAgentLog('Report Agent', '整合项目画像 + 风险分析 + 知识匹配结果...');
+  await sleep(1000);
+  addAgentLog('Report Agent', '生成项目经营诊断报告（含证据链、行动建议）');
+  await sleep(600);
+  addAgentLog('Report Agent', '报告已生成，提交审核');
+  setAgentState(4, 'done', '报告已生成');
+  setArrowState(4, true);
+  await sleep(400);
+
+  // Step 5: Review Agent
+  setAgentState(5, 'active', '合规审核中...');
+  addAgentLog('Review Agent', '检查规则冲突...');
+  await sleep(800);
+  addAgentLog('Review Agent', '检查资料完整性：发现2份验收材料缺失');
+  await sleep(600);
+  addAgentLog('Review Agent', '检查敏感内容：涉及财务结论，需人工确认');
+  setAgentState(5, 'done', '需人工确认');
+  await sleep(400);
+
+  addAgentLog('系统', '多Agent协同分析完成！报告已就绪，等待人工审核确认。');
+  showToast('Agent协同分析完成', 'success');
+
+  agentDemoRunning = false;
+}
+
+// ==================== RISK DETAILS ====================
+function renderRiskDetails() {
+  const highRisk = projects.filter(p => calcHealth(p) < 50);
+  const medRisk = projects.filter(p => { const h = calcHealth(p); return h >= 50 && h < 70; });
+  document.getElementById('riskDetails').innerHTML = [...highRisk, ...medRisk].map(p => {
+    const health = calcHealth(p);
+    const risk = getRiskLevel(health);
+    const costRate = (p.cost/p.budget*100).toFixed(1);
+    const timeRate = (p.usedDays/p.planDays*100).toFixed(1);
+    return `<div class="card p-6 mb-4">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-bold text-lg text-surface-900">${p.id} ${p.name}</h3>
+          <p class="text-sm text-surface-500">${p.client} | ${p.stage}</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1 rounded-lg text-xs font-medium ${risk.cls}">${risk.level}</span>
+          <span class="text-2xl font-bold" style="color:${risk.color}">${health}分</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-4 gap-4 mb-4">
+        <div class="p-3 rounded-lg ${costRate>90?'bg-red-50':'bg-surface-50'}">
+          <p class="text-xs ${costRate>90?'text-red-600':'text-surface-500'}">成本使用率</p>
+          <p class="font-bold ${costRate>90?'text-red-600':'text-surface-900'}">${costRate}%</p>
+        </div>
+        <div class="p-3 rounded-lg ${timeRate>90?'bg-red-50':'bg-surface-50'}">
+          <p class="text-xs ${timeRate>90?'text-red-600':'text-surface-500'}">周期使用率</p>
+          <p class="font-bold ${timeRate>90?'text-red-600':'text-surface-900'}">${timeRate}%</p>
+        </div>
+        <div class="p-3 rounded-lg ${p.quality>=3?'bg-amber-50':'bg-surface-50'}">
+          <p class="text-xs ${p.quality>=3?'text-amber-600':'text-surface-500'}">质量问题</p>
+          <p class="font-bold ${p.quality>=3?'text-amber-600':'text-surface-900'}">${p.quality}个</p>
+        </div>
+        <div class="p-3 rounded-lg ${p.satisfaction<3.8?'bg-amber-50':'bg-surface-50'}">
+          <p class="text-xs ${p.satisfaction<3.8?'text-amber-600':'text-surface-500'}">满意度</p>
+          <p class="font-bold ${p.satisfaction<3.8?'text-amber-600':'text-surface-900'}">${p.satisfaction}</p>
+        </div>
+      </div>
+      <button onclick="showPage('detail','${p.id}')" class="text-sm text-brand-600 hover:text-brand-700 font-medium">查看详情 →</button>
+    </div>`;
+  }).join('');
+}
+
+// ==================== REPORTS ====================
+function showReport(type) {
+  const el = document.getElementById('reportContent');
+  if (type === 'diagnosis') {
+    el.innerHTML = `
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-surface-900">项目经营诊断报告</h3>
+        <span class="text-xs text-surface-400">由 Report Agent 自动生成 | ${new Date().toLocaleDateString('zh-CN')}</span>
+      </div>
+      <div class="prose prose-sm max-w-none">
+        <h4 class="font-semibold text-surface-900 mb-3">一、整体经营概况</h4>
+        <p class="text-surface-700 mb-4">当前在管项目8个，总预算277万元，已发生成本201万元，整体成本使用率72.6%。其中高风险项目2个（P002、P005），中风险项目3个（P001、P006、P008），低风险项目3个（P003、P004、P007）。</p>
+
+        <h4 class="font-semibold text-surface-900 mb-3">二、关键风险识别</h4>
+        <div class="space-y-3 mb-4">
+          <div class="p-3 rounded-lg bg-red-50 border border-red-100">
+            <p class="text-sm font-medium text-red-900">P002 数字化咨询交付项目（高风险）</p>
+            <p class="text-xs text-red-700 mt-1">成本超预算3万（110.7%），质量问题5个，满意度3.1。客户反馈报告修改次数多，成本超支未提前预警。</p>
+          </div>
+          <div class="p-3 rounded-lg bg-red-50 border border-red-100">
+            <p class="text-sm font-medium text-red-900">P005 企业数据中台建设（高风险）</p>
+            <p class="text-xs text-red-700 mt-1">成本使用率89.1%，周期使用率93.3%，质量问题4个。关键节点延期，客户要求解释成本变化。</p>
+          </div>
+        </div>
+
+        <h4 class="font-semibold text-surface-900 mb-3">三、2-6周最小验证路径</h4>
+        <div class="p-4 rounded-xl bg-blue-50 border border-blue-100 mb-4">
+          <p class="text-sm text-blue-900"><strong>第1-2周：</strong>建立项目健康度评分模型，对8个项目完成首次自动体检，输出风险清单。</p>
+          <p class="text-sm text-blue-900 mt-2"><strong>第3-4周：</strong>对接项目经营数据源，实现成本、进度、质量数据自动采集，消除人工汇总。</p>
+          <p class="text-sm text-blue-900 mt-2"><strong>第5-6周：</strong>上线AI诊断报告自动生成功能，替代月度人工整理，实现"一键体检"。</p>
+        </div>
+
+        <h4 class="font-semibold text-surface-900 mb-3">四、企业需配合事项</h4>
+        <ul class="list-disc list-inside text-sm text-surface-700 space-y-1 mb-4">
+          <li>提供统一的项目编号命名规范</li>
+          <li>开放财务系统成本数据接口（或定期导出Excel）</li>
+          <li>指定1名项目经理作为种子用户参与测试</li>
+          <li>提供历史项目复盘文档用于知识库建设</li>
+        </ul>
+
+        <h4 class="font-semibold text-surface-900 mb-3">五、最小交付物</h4>
+        <ul class="list-disc list-inside text-sm text-surface-700 space-y-1 mb-4">
+          <li>项目健康度评分看板（覆盖8个在管项目）</li>
+          <li>AI自动生成的月度经营诊断报告模板</li>
+          <li>风险预警规则引擎（含成本、进度、质量、验收4个维度）</li>
+          <li>人工复核工作流（含审核记录和证据链）</li>
+        </ul>
+
+        <h4 class="font-semibold text-surface-900 mb-3">六、可衡量效果</h4>
+        <div class="grid grid-cols-3 gap-4">
+          <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-center">
+            <p class="text-2xl font-bold text-emerald-600">30秒</p>
+            <p class="text-xs text-emerald-700 mt-1">项目状态查询时间<br>（从30分钟降至30秒）</p>
+          </div>
+          <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-center">
+            <p class="text-2xl font-bold text-emerald-600">-80%</p>
+            <p class="text-xs text-emerald-700 mt-1">月报整理工作量<br>（从8小时降至1.5小时）</p>
+          </div>
+          <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-center">
+            <p class="text-2xl font-bold text-emerald-600">提前2周</p>
+            <p class="text-xs text-emerald-700 mt-1">风险发现时间<br>（从验收前到执行中）</p>
+          </div>
+        </div>
+      </div>`;
+  } else if (type === 'monthly') {
+    el.innerHTML = `
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-surface-900">月度经营分析报告</h3>
+        <span class="text-xs text-surface-400">2025年6月 | Report Agent 自动生成</span>
+      </div>
+      <div class="prose prose-sm max-w-none">
+        <h4 class="font-semibold mb-3">本月经营数据</h4>
+        <div class="grid grid-cols-4 gap-4 mb-6">
+          <div class="p-4 rounded-xl bg-surface-50 text-center"><p class="text-2xl font-bold">8</p><p class="text-xs text-surface-500">在管项目</p></div>
+          <div class="p-4 rounded-xl bg-surface-50 text-center"><p class="text-2xl font-bold">277万</p><p class="text-xs text-surface-500">总预算</p></div>
+          <div class="p-4 rounded-xl bg-surface-50 text-center"><p class="text-2xl font-bold">201万</p><p class="text-xs text-surface-500">已发生成本</p></div>
+          <div class="p-4 rounded-xl bg-surface-50 text-center"><p class="text-2xl font-bold">23.8%</p><p class="text-xs text-surface-500">平均利润率</p></div>
+        </div>
+        <h4 class="font-semibold mb-3">重点关注项目</h4>
+        <p class="text-surface-700 mb-4">P002和P005为高风险项目，需要在本月内制定应对方案。P001和P006即将进入验收阶段，需提前准备验收材料。</p>
+        <h4 class="font-semibold mb-3">下月行动建议</h4>
+        <ul class="list-disc list-inside text-surface-700 space-y-1">
+          <li>P002：召开成本超支专项会议，制定止损方案</li>
+          <li>P005：与客户沟通延期原因，协商调整计划</li>
+          <li>P001/P006：提前准备验收材料清单</li>
+          <li>P003：输出检测项目模板，供P007复用</li>
+        </ul>
+      </div>`;
+  } else {
+    el.innerHTML = `
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-surface-900">项目复盘报告</h3>
+        <span class="text-xs text-surface-400">Knowledge Agent 辅助生成</span>
+      </div>
+      <div class="prose prose-sm max-w-none">
+        <h4 class="font-semibold mb-3">复盘方法论</h4>
+        <p class="text-surface-700 mb-4">采用"目标-结果-原因-行动"四步复盘法，结合历史案例库中的最佳实践进行对比分析。</p>
+        <h4 class="font-semibold mb-3">典型复盘发现</h4>
+        <div class="space-y-3 mb-4">
+          <div class="p-3 rounded-lg bg-surface-50">
+            <p class="text-sm font-medium">发现1：需求变更管理不足</p>
+            <p class="text-xs text-surface-600 mt-1">P002项目报告修改5次，未建立变更影响评估机制。建议参照"高校信息系统集成项目"的变更管理SOP。</p>
+          </div>
+          <div class="p-3 rounded-lg bg-surface-50">
+            <p class="text-sm font-medium">发现2：成本预警机制缺失</p>
+            <p class="text-xs text-surface-600 mt-1">P005项目成本使用率89.1%时仍未触发预警。建议设置90%自动预警阈值。</p>
+          </div>
+        </div>
+        <h4 class="font-semibold mb-3">沉淀的知识资产</h4>
+        <ul class="list-disc list-inside text-surface-700 space-y-1">
+          <li>新增SOP：需求变更影响评估流程</li>
+          <li>新增规则：成本使用率90%自动预警</li>
+          <li>更新模板：验收材料检查清单V2</li>
+        </ul>
+      </div>`;
+  }
+}
+
+// ==================== REVIEW CENTER ====================
+function handleReview(btn, action, title) {
+  const card = btn.closest('.rounded-xl');
+  const statusSpan = card.querySelector('.rounded.text-xs.font-medium');
+  const btnGroup = btn.parentElement;
+
+  if (action === 'confirm') {
+    statusSpan.className = 'px-2 py-1 rounded text-xs font-medium bg-emerald-500 text-white';
+    statusSpan.textContent = '已确认';
+    btnGroup.innerHTML = '<span class="text-sm text-emerald-600 font-medium">已确认 - ' + title + '</span>';
+    showToast('已确认：' + title, 'success');
+  } else if (action === 'modify') {
+    statusSpan.className = 'px-2 py-1 rounded text-xs font-medium bg-blue-500 text-white';
+    statusSpan.textContent = '修改中';
+    btnGroup.innerHTML = '<span class="text-sm text-blue-600 font-medium">已标记修改 - 请在备注中填写修改意见</span>';
+    showToast('已标记修改：' + title, 'info');
+  } else if (action === 'reject') {
+    statusSpan.className = 'px-2 py-1 rounded text-xs font-medium bg-red-500 text-white';
+    statusSpan.textContent = '已驳回';
+    btnGroup.innerHTML = '<span class="text-sm text-red-600 font-medium">已驳回 - ' + title + '</span>';
+    showToast('已驳回：' + title, 'warning');
+  }
+
+  card.style.transition = 'all 0.3s ease';
+  card.style.opacity = '0.7';
+}
+
+function renderReviewCenter() {
+  const reviewItems = [
+    { id: 'r1', title: 'P002 成本超支结论', confidence: '95%', border: 'border-amber-200 bg-amber-50', badge: 'bg-amber-500',
+      advice: 'P002项目成本已超预算3万（110.7%），建议标记为高风险并启动成本审查流程。',
+      source: '项目经营样例数据.xlsx → 项目记录 → P002行' },
+    { id: 'r2', title: 'P005 进度延期结论', confidence: '92%', border: 'border-amber-200 bg-amber-50', badge: 'bg-amber-500',
+      advice: 'P005项目周期使用率93.3%，仅剩5天，建议与客户协商调整交付计划。',
+      source: '项目经营样例数据.xlsx → 项目记录 → P005行 + 客户反馈' },
+    { id: 'r3', title: 'P006 验收材料不一致', confidence: '88%', border: 'border-blue-200 bg-blue-50', badge: 'bg-blue-500',
+      advice: 'P006验收材料版本不一致，需确认最终模板版本。建议参照验收交付SOP进行材料核查。',
+      source: '客户反馈表 → P006 → "验收材料版本不一致"' },
+    { id: 'r4', title: 'P002 客户满意度偏低', confidence: '90%', border: 'border-red-200 bg-red-50', badge: 'bg-red-500',
+      advice: 'P002客户满意度3.1，低于3.8阈值。报告修改次数多，需与客户沟通改善方案。',
+      source: '项目经营样例数据.xlsx → P002满意度 + 客户反馈："报告修改次数多"' }
+  ];
+
+  const cardsHtml = reviewItems.map(item => `
+    <div class="p-4 rounded-xl border-2 ${item.border}">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-1 rounded text-xs font-medium ${item.badge} text-white">待审核</span>
+          <span class="font-medium text-surface-900">${item.title}</span>
+        </div>
+        <span class="text-xs text-surface-500">AI置信度: ${item.confidence}</span>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mb-3">
+        <div>
+          <p class="text-xs text-surface-500 mb-1">AI 建议</p>
+          <p class="text-sm text-surface-700">${item.advice}</p>
+        </div>
+        <div>
+          <p class="text-xs text-surface-500 mb-1">证据来源</p>
+          <p class="text-sm text-surface-700">${item.source}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition" onclick="handleReview(this,'confirm','${item.title}')">确认</button>
+        <button class="px-4 py-2 bg-white border border-surface-200 text-surface-700 rounded-lg text-sm font-medium hover:bg-surface-50 transition" onclick="handleReview(this,'modify','${item.title}')">修改</button>
+        <button class="px-4 py-2 bg-white border border-surface-200 text-surface-700 rounded-lg text-sm font-medium hover:bg-surface-50 transition" onclick="handleReview(this,'reject','${item.title}')">驳回</button>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('reviewContent').innerHTML = `
+    <div class="card p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-surface-900">待审核事项（Review Agent 筛选）</h3>
+        <span class="px-3 py-1 rounded-lg bg-amber-50 text-amber-700 text-xs font-medium">待审核 ${reviewItems.length} 项</span>
+      </div>
+      <div class="space-y-4">${cardsHtml}</div>
+    </div>
+    <div class="card p-6">
+      <h3 class="font-semibold text-surface-900 mb-4">审核原则（Review Agent 规则）</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="p-3 rounded-lg bg-red-50 border border-red-100">
+          <p class="text-sm font-medium text-red-900">必须人工确认</p>
+          <p class="text-xs text-red-700 mt-1">财务结论、验收结论、客户承诺、对外发布内容</p>
+        </div>
+        <div class="p-3 rounded-lg bg-amber-50 border border-amber-100">
+          <p class="text-sm font-medium text-amber-900">自动检查项</p>
+          <p class="text-xs text-amber-700 mt-1">规则冲突、资料缺失、风险遗漏、敏感内容</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ==================== UTILITY FUNCTIONS ====================
+
+// Toast Notification
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+
+  const icons = {
+    success: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    error: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    info: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    warning: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>'
+  };
+
+  toast.innerHTML = `${icons[type] || icons.info}<span>${message}</span>`;
+  container.appendChild(toast);
+
+  // Trigger animation
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
+
+  // Auto remove
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// Animated Counter
+function animateCounter(element, target, duration = 1000) {
+  let start = 0;
+  const increment = target / (duration / 16);
+  const timer = setInterval(() => {
+    start += increment;
+    if (start >= target) {
+      element.textContent = target;
+      clearInterval(timer);
+    } else {
+      element.textContent = Math.floor(start);
+    }
+  }, 16);
+}
+
+// Format Number
+function formatNumber(num) {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+// Debounce
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// ==================== AI CHAT & DEEPSEEK INTEGRATION ====================
+
+// DeepSeek API Configuration
+// API Key via environment variable or URL parameter (never hardcode)
+const AI_CONFIG = {
+  apiKey: new URLSearchParams(window.location.search).get('api_key') || localStorage.getItem('DEEPSEEK_API_KEY') || '',
+  endpoint: 'https://api.deepseek.com/v1/chat/completions',
+  model: 'deepseek-v4-flash',
+  maxTokens: 2000,
+  temperature: 0.7,
+  // Use mock mode when no API key is configured
+  get useMock() { return !this.apiKey; }
+};
+
+// Chat state
+let chatHistory = [];
+let isProcessing = false;
+
+// System prompt for PM context
+const SYSTEM_PROMPT = `你是 PM Insight Copilot 的 AI 助手，专门帮助项目经理分析项目状态、识别风险、生成报告。
+
+你有以下8个项目的数据：
+${projects.map(p => `- ${p.id} ${p.name}: 预算${p.budget}万, 已发生${p.cost}万, 周期${p.planDays}天/已用${p.usedDays}天, 质量问题${p.quality}个, 满意度${p.satisfaction}, 验收风险${p.risk}`).join('\n')}
+
+风险计算规则：
+- 成本使用率 = 已发生成本/预算，超过90%标记成本风险
+- 周期使用率 = 已用天数/计划周期，超过90%标记进度风险
+- 质量问题>=3 或 满意度<3.8 需人工复核
+
+请用专业但易懂的语言回答，必要时使用表格或列表格式化输出。`;
+
+// Toggle chat window
+function toggleChat() {
+  const window = document.getElementById('aiChatWindow');
+  const btn = document.querySelector('.ai-chat-btn');
+  window.classList.toggle('open');
+  btn.classList.toggle('active');
+  if (window.classList.contains('open')) {
+    document.getElementById('chatInput').focus();
+  }
+}
+
+// Simple markdown renderer
+function renderMarkdown(text) {
+  let html = text;
+
+  // Code blocks - using chr(96) for backtick to avoid template literal conflict
+  const bt = String.fromCharCode(96);
+  const codeBlockRegex = new RegExp(bt + bt + bt + '(\\w*)\\n([\\s\\S]*?)' + bt + bt + bt, 'g');
+  html = html.replace(codeBlockRegex, '<pre class="bg-surface-800 text-surface-100 p-3 rounded-lg text-xs my-2 overflow-x-auto"><code>$2</code></pre>');
+
+  // Tables
+  html = html.replace(/\|(.+)\|\n\|[-\s|]+\|\n((?:\|.+\|\n?)*)/g, function(match, header, rows) {
+    const headers = header.split('|').filter(h => h.trim()).map(h => `<th class="px-3 py-2 text-left text-xs font-medium text-surface-500 bg-surface-50">${h.trim()}</th>`).join('');
+    const rowsHtml = rows.trim().split('\n').map(row => {
+      const cells = row.split('|').filter(c => c.trim()).map(c => `<td class="px-3 py-2 text-xs text-surface-700">${c.trim()}</td>`).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+    return `<table class="w-full text-xs my-2 border border-surface-200 rounded-lg overflow-hidden"><thead><tr>${headers}</tr></thead><tbody>${rowsHtml}</tbody></table>`;
+  });
+
+  // Headers
+  html = html.replace(/^### (.+)$/gm, '<h4 class="font-semibold text-surface-900 mt-3 mb-1">$1</h4>');
+  html = html.replace(/^## (.+)$/gm, '<h3 class="font-bold text-surface-900 mt-3 mb-1">$1</h3>');
+
+  // Bold
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+  // Italic
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  // Inline code - using chr(96) for backtick to avoid template literal conflict
+  const inlineCodeRegex = new RegExp(bt + '([^' + bt + ']+)' + bt, 'g');
+  html = html.replace(inlineCodeRegex, '<code class="px-1 py-0.5 bg-surface-100 rounded text-xs">$1</code>');
+
+  // Unordered lists
+  html = html.replace(/^[-*] (.+)$/gm, '<li class="ml-4 list-disc">$1</li>');
+  html = html.replace(/(<li.*<\/li>)/s, '<ul class="my-1">$1</ul>');
+
+  // Ordered lists
+  html = html.replace(/^\d+\. (.+)$/gm, '<li class="ml-4 list-decimal">$1</li>');
+
+  // Line breaks
+  html = html.replace(/\n\n/g, '</p><p class="mt-2">');
+  html = html.replace(/\n/g, '<br>');
+
+  // Wrap in paragraph if not already
+  if (!html.startsWith('<')) {
+    html = '<p>' + html + '</p>';
+  }
+
+  return html;
+}
+
+// Add message to chat UI
+function addMessage(role, content) {
+  const messages = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = `ai-message ${role}`;
+  const avatar = role === 'user' ? '👤' : '🤖';
+  const renderedContent = role === 'assistant' ? renderMarkdown(content) : content.replace(/\n/g, '<br>');
+  div.innerHTML = `
+    <div class="avatar">${avatar}</div>
+    <div class="bubble">${renderedContent}</div>
+  `;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+  return div;
+}
+
+// Show typing indicator
+function showTyping() {
+  const messages = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'ai-message assistant';
+  div.id = 'typingIndicator';
+  div.innerHTML = `
+    <div class="avatar">🤖</div>
+    <div class="ai-typing"><span></span><span></span><span></span></div>
+  `;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+// Hide typing indicator
+function hideTyping() {
+  const typing = document.getElementById('typingIndicator');
+  if (typing) typing.remove();
+}
+
+// Call DeepSeek API
+async function callDeepSeek(userMessage) {
+  chatHistory.push({ role: 'user', content: userMessage });
+
+  // Use mock mode when no API key is configured
+  if (AI_CONFIG.useMock) {
+    await new Promise(r => setTimeout(r, 800 + Math.random() * 400));
+    const response = generateMockResponse(userMessage);
+    chatHistory.push({ role: 'assistant', content: response });
+    return response;
+  }
+
+  const requestBody = {
+    model: AI_CONFIG.model,
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      ...chatHistory.slice(-10)
+    ],
+    max_tokens: AI_CONFIG.maxTokens,
+    temperature: AI_CONFIG.temperature,
+    stream: false
+  };
+
+  try {
+    const response = await fetch(AI_CONFIG.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${AI_CONFIG.apiKey}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API请求失败: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const assistantMessage = data.choices[0].message.content;
+    chatHistory.push({ role: 'assistant', content: assistantMessage });
+    return assistantMessage;
+  } catch (error) {
+    console.error('DeepSeek API Error:', error);
+    const fallback = generateMockResponse(userMessage);
+    chatHistory.push({ role: 'assistant', content: fallback });
+    return fallback;
+  }
+}
+
+// Mock response fallback
+function generateMockResponse(question) {
+  const q = question.toLowerCase();
+
+  // P002 risk analysis
+  if (q.includes('p002') && (q.includes('风险') || q.includes('分析'))) {
+    return `## P002 数字化咨询交付项目 - 风险分析
+
+**风险等级：** 🔴 高风险 | **健康度：** 35/100
+
+### 风险维度分析
+
+| 维度 | 状态 | 详情 |
+|------|------|------|
+| 成本风险 | 🔴高 | 成本使用率110.7%，已超预算3万 |
+| 进度风险 | 🔴高 | 周期使用率93.3%，仅剩3天 |
+| 质量风险 | 🔴高 | 质量问题5个 |
+| 满意度风险 | 🔴高 | 满意度3.1，低于3.8阈值 |
+
+### 证据链追溯
+
+- **结论：** 成本超预算，需立即介入
+- **规则：** 成本使用率>100%触发高风险
+- **数据：** 预算28万，已发生31万
+- **来源：** 项目经营样例数据.xlsx → P002行
+
+### 改进建议
+
+1. 立即召开成本超支专项会议
+2. 与客户沟通，协商止损方案
+3. 分析质量问题根因，制定改进措施
+4. 更新项目计划，预留缓冲时间`;
+  }
+
+  // Projects needing attention
+  if (q.includes('重点关注') || q.includes('哪些项目')) {
+    return `## 需要重点关注的项目
+
+根据当前数据分析，以下项目需要重点关注：
+
+### 🔴 高风险项目（立即处理）
+
+1. **P002 数字化咨询交付项目**
+   - 成本超预算 + 质量严重
+   - 健康度：35分
+
+2. **P005 企业数据中台建设**
+   - 进度严重滞后
+   - 健康度：45分
+
+### 🟡 中风险项目（密切关注）
+
+3. **P001 智慧园区管理平台** - 即将验收
+4. **P006 运营咨询与优化项目** - 验收材料问题
+5. **P008 高校信息化集成项目** - 需跟踪
+
+### 优先行动
+
+- **P002：** 48小时内启动成本审查
+- **P005：** 本周与客户协商延期方案
+- **P001/P006：** 提前准备验收材料`;
+  }
+
+  // Monthly report
+  if (q.includes('月报') || q.includes('月度')) {
+    return `## 2025年6月经营分析报告摘要
+
+### 整体数据
+
+- 在管项目：**8个**
+- 总预算：**277万**
+- 已发生成本：**201万**（72.6%）
+- 平均利润率：**23.8%**
+
+### 风险分布
+
+| 风险等级 | 数量 | 项目 |
+|---------|------|------|
+| 高风险 | 2个 | P002, P005 |
+| 中风险 | 3个 | P001, P006, P008 |
+| 低风险 | 3个 | P003, P004, P007 |
+
+### 下月行动建议
+
+1. P002：成本超支专项会议
+2. P005：协商调整交付计划
+3. P001/P006：准备验收材料
+
+完整报告请查看"报告中心"页面。`;
+  }
+
+  // P005 progress
+  if (q.includes('p005') && (q.includes('进度') || q.includes('状态'))) {
+    return `## P005 企业数据中台建设 - 进度分析
+
+### 进度数据
+
+- 计划周期：**75天**
+- 已用天数：**70天**
+- 周期使用率：**93.3%**
+- 剩余天数：**5天**
+
+### 状态评估
+
+🔴 **进度严重滞后**
+
+### 问题分析
+
+1. 关键节点延期
+2. 客户要求解释成本变化
+3. 质量问题4个待解决
+
+### 建议措施
+
+- 立即与客户沟通延期原因
+- 协商调整交付计划
+- 增加资源投入关键路径
+- 制定质量修复计划`;
+  }
+
+  // P001 analysis
+  if (q.includes('p001')) {
+    return `## P001 智慧园区管理平台 - 项目分析
+
+### 项目概况
+
+- 客户类型：科技服务
+- 项目阶段：验收前
+- 健康度：**65分**（中风险）
+
+### 关键指标
+
+| 指标 | 数值 | 状态 |
+|------|------|------|
+| 成本使用率 | 85.7% | ⚠️关注 |
+| 周期使用率 | 91.7% | ⚠️紧张 |
+| 质量问题 | 2个 | ✅可控 |
+| 满意度 | 4.2 | ✅良好 |
+
+### 建议
+
+1. 提前准备验收材料
+2. 确认最终模板版本
+3. 与客户确认验收时间表`;
+  }
+
+  // General response
+  return `感谢您的提问！基于当前项目数据分析：
+
+您的问题"${question}"涉及的项目信息我已查阅。
+
+### 快速导航
+
+1. **项目全景** - 查看所有项目的健康度和风险状态
+2. **风险分析** - 查看详细的风险评估报告
+3. **报告中心** - 获取AI生成的诊断报告
+4. **审核中心** - 处理待确认的AI建议
+
+### 可用项目
+
+- P001 智慧园区管理平台（中风险）
+- P002 数字化咨询交付项目（高风险）
+- P003 检测数据治理系统（低风险）
+- P004 展览数字化策划平台（低风险）
+- P005 企业数据中台建设（高风险）
+- P006 运营咨询与优化项目（中风险）
+- P007 环境检测平台升级（低风险）
+- P008 高校信息化集成项目（中风险）
+
+如需更详细的分析，请告诉我具体的项目编号（如P002）或关注的维度（如风险、进度、成本）。`;
+}
+
+// Send message
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const message = input.value.trim();
+  if (!message || isProcessing) return;
+
+  input.value = '';
+  addMessage('user', message);
+
+  isProcessing = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  // Multi-Agent pipeline visualization
+  const agents = [
+    { name: 'Project Intelligence', color: '#3b82f6', icon: '🔍', task: '读取项目数据，生成画像...' },
+    { name: 'Risk Agent', color: '#ef4444', icon: '⚠️', task: '多维度风险分析...' },
+    { name: 'Knowledge Agent', color: '#8b5cf6', icon: '📚', task: '检索历史案例和SOP...' },
+    { name: 'Report Agent', color: '#10b981', icon: '📊', task: '整合生成分析报告...' },
+    { name: 'Review Agent', color: '#f59e0b', icon: '✅', task: '合规检查，标记待确认项...' }
+  ];
+
+  const messages = document.getElementById('chatMessages');
+
+  // Create agent pipeline display
+  const pipelineDiv = document.createElement('div');
+  pipelineDiv.className = 'ai-message assistant';
+  pipelineDiv.id = 'agentPipelineChat';
+  pipelineDiv.innerHTML = `
+    <div class="avatar">🤖</div>
+    <div class="bubble" style="padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">
+      <div style="font-size:12px;font-weight:600;color:#1e293b;margin-bottom:10px;">多Agent协同分析中...</div>
+      <div id="agentStepsChat" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+  `;
+  messages.appendChild(pipelineDiv);
+  messages.scrollTop = messages.scrollHeight;
+
+  // Run each agent step with animation
+  for (let i = 0; i < agents.length; i++) {
+    const agent = agents[i];
+    const stepsEl = document.getElementById('agentStepsChat');
+
+    // Add current agent step
+    const stepDiv = document.createElement('div');
+    stepDiv.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:white;border:1px solid #e2e8f0;font-size:12px;';
+    stepDiv.innerHTML = `
+      <span style="width:20px;height:20px;border-radius:6px;background:${agent.color};display:flex;align-items:center;justify-content:center;font-size:10px;">${agent.icon}</span>
+      <span style="font-weight:600;color:#1e293b;min-width:120px;">${agent.name}</span>
+      <span style="color:#3b82f6;font-size:11px;" class="agent-step-status">${agent.task}</span>
+    `;
+    stepsEl.appendChild(stepDiv);
+    messages.scrollTop = messages.scrollHeight;
+
+    // Simulate processing time
+    await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
+
+    // Mark as complete
+    const statusEl = stepDiv.querySelector('.agent-step-status');
+    statusEl.textContent = '已完成';
+    statusEl.style.color = '#10b981';
+    stepDiv.style.borderColor = '#d1fae5';
+    stepDiv.style.background = '#f0fdf4';
+  }
+
+  // Get final response
+  const response = await callDeepSeek(message);
+
+  // Remove pipeline display
+  const pipeline = document.getElementById('agentPipelineChat');
+  if (pipeline) pipeline.remove();
+
+  // Show final response
+  addMessage('assistant', response);
+
+  isProcessing = false;
+  document.getElementById('sendBtn').disabled = false;
+}
+
+// Send quick message
+function sendQuickMessage(message) {
+  document.getElementById('chatInput').value = message;
+  sendMessage();
+}
+
+// AI Health Check for project
+async function runAIHealthCheck(projectId) {
+  const p = projects.find(x => x.id === projectId);
+  if (!p) return;
+
+  const btn = document.getElementById('healthCheckBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="w-4 h-4 spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> AI分析中...';
+  }
+
+  showToast(`正在对 ${p.id} 进行AI健康体检...`, 'info');
+
+  const costRate = (p.cost / p.budget * 100).toFixed(1);
+  const timeRate = (p.usedDays / p.planDays * 100).toFixed(1);
+  const profitRate = ((p.budget - p.cost) / p.budget * 100).toFixed(1);
+
+  const prompt = `请对项目 ${p.id} ${p.name} 进行全面健康体检分析：
+
+项目数据：
+- 客户类型：${p.client}
+- 项目阶段：${p.stage}
+- 预算：${p.budget}万，已发生：${p.cost}万
+- 成本使用率：${costRate}%
+- 计划周期：${p.planDays}天，已用：${p.usedDays}天
+- 周期使用率：${timeRate}%
+- 利润率：${profitRate}%
+- 质量问题：${p.quality}个
+- 客户满意度：${p.satisfaction}/5.0
+- 验收风险：${p.risk}
+- 客户反馈：${p.feedback}
+
+请输出：
+1. 健康度评分（0-100）
+2. 风险等级（高/中/低）
+3. 各维度风险分析
+4. 证据链追溯
+5. 具体改进建议`;
+
+  try {
+    // Open chat and send
+    if (!document.getElementById('aiChatWindow').classList.contains('open')) {
+      toggleChat();
+    }
+    addMessage('user', `对 ${p.id} 进行AI健康体检`);
+
+    showTyping();
+    const response = await callDeepSeek(prompt);
+    hideTyping();
+    addMessage('assistant', response);
+    showToast(`${p.id} 健康体检完成`, 'success');
+  } catch (error) {
+    hideTyping();
+    addMessage('assistant', '健康体检分析失败，请稍后重试。');
+    showToast('健康体检失败，请稍后重试', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> AI 健康体检';
+    }
+  }
+}
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => {
+  renderDashboard();
+  renderProjectCards();
+
+  // Welcome toast
+  setTimeout(() => {
+    showToast('欢迎使用 PM Insight Copilot', 'success');
+  }, 500);
+
+  // Animate counters on dashboard
+  setTimeout(() => {
+    const counters = document.querySelectorAll('.counter');
+    counters.forEach(counter => {
+      const target = parseInt(counter.dataset.target);
+      if (target) animateCounter(counter, target);
+    });
+  }, 300);
+});
+</script>
+</body>
+</html>
