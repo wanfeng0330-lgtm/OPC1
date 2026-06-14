@@ -391,108 +391,6 @@ tailwind.config = {
     </div>
   </div>
 
-  <!-- Agent Collaboration Visualization -->
-  <div class="card p-6 mb-8">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h3 class="font-semibold text-surface-900">多 Agent 协同工作流</h3>
-        <p class="text-xs text-surface-500 mt-1">5个AI Agent协作完成项目分析、风险评估、报告生成和审核</p>
-      </div>
-      <button onclick="runAgentDemo()" class="px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        运行协同演示
-      </button>
-    </div>
-
-    <!-- Agent Pipeline Flow -->
-    <div class="relative mb-8" id="agentPipeline">
-      <svg class="absolute inset-0 w-full h-full pointer-events-none" style="z-index:0">
-        <defs>
-          <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-            <polygon points="0 0, 8 3, 0 6" fill="#94a3b8"/>
-          </marker>
-          <marker id="arrowhead-active" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-            <polygon points="0 0, 8 3, 0 6" fill="#3b82f6"/>
-          </marker>
-        </defs>
-      </svg>
-
-      <div class="grid grid-cols-5 gap-4 relative z-10">
-        <div class="agent-card" id="agent1">
-          <div class="agent-icon-wrap bg-blue-500">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-          </div>
-          <p class="agent-name">Project Intelligence</p>
-          <p class="agent-desc">项目画像 · 状态整合</p>
-          <div class="agent-status" id="agent1Status"><span class="status-dot idle"></span><span>待机</span></div>
-          <div class="agent-task" id="agent1Task"></div>
-        </div>
-        <div class="flex items-center justify-center"><div class="agent-arrow" id="arrow1"><svg class="w-8 h-8 text-surface-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg></div></div>
-        <div class="agent-card" id="agent2">
-          <div class="agent-icon-wrap bg-purple-500">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-          </div>
-          <p class="agent-name">Knowledge Agent</p>
-          <p class="agent-desc">RAG检索 · 案例匹配</p>
-          <div class="agent-status" id="agent2Status"><span class="status-dot idle"></span><span>待机</span></div>
-          <div class="agent-task" id="agent2Task"></div>
-        </div>
-        <div class="flex items-center justify-center"><div class="agent-arrow" id="arrow2"><svg class="w-8 h-8 text-surface-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg></div></div>
-        <div class="agent-card" id="agent3">
-          <div class="agent-icon-wrap bg-red-500">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-          </div>
-          <p class="agent-name">Risk Agent</p>
-          <p class="agent-desc">风险评估 · 证据链</p>
-          <div class="agent-status" id="agent3Status"><span class="status-dot idle"></span><span>待机</span></div>
-          <div class="agent-task" id="agent3Task"></div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-5 gap-4 mt-4 relative z-10">
-        <div class="col-start-1 flex items-center justify-center"><div class="agent-arrow-down" id="arrow3"><svg class="w-8 h-8 text-surface-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg></div></div>
-        <div></div><div></div><div></div><div></div>
-      </div>
-
-      <div class="grid grid-cols-5 gap-4 mt-4 relative z-10">
-        <div class="agent-card" id="agent4">
-          <div class="agent-icon-wrap bg-emerald-500">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          </div>
-          <p class="agent-name">Report Agent</p>
-          <p class="agent-desc">报告生成 · 可视化</p>
-          <div class="agent-status" id="agent4Status"><span class="status-dot idle"></span><span>待机</span></div>
-          <div class="agent-task" id="agent4Task"></div>
-        </div>
-        <div class="flex items-center justify-center"><div class="agent-arrow" id="arrow4"><svg class="w-8 h-8 text-surface-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg></div></div>
-        <div class="agent-card" id="agent5">
-          <div class="agent-icon-wrap bg-amber-500">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          </div>
-          <p class="agent-name">Review Agent</p>
-          <p class="agent-desc">合规审核 · 人工确认</p>
-          <div class="agent-status" id="agent5Status"><span class="status-dot idle"></span><span>待机</span></div>
-          <div class="agent-task" id="agent5Task"></div>
-        </div>
-        <div></div><div></div>
-      </div>
-    </div>
-
-    <!-- Agent Activity Log -->
-    <div class="border-t border-surface-100 pt-4">
-      <div class="flex items-center justify-between mb-3">
-        <h4 class="text-sm font-medium text-surface-700">Agent 活动日志</h4>
-        <button onclick="clearAgentLog()" class="text-xs text-surface-400 hover:text-surface-600 transition">清空</button>
-      </div>
-      <div id="agentLog" class="space-y-2 max-h-48 overflow-y-auto">
-        <div class="flex items-start gap-3 p-2 rounded-lg bg-surface-50 text-xs">
-          <span class="text-surface-400 whitespace-nowrap">系统</span>
-          <span class="text-surface-600">所有 Agent 已就绪，等待任务触发</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Stats Row -->
   <div class="grid grid-cols-4 gap-6 mb-8">
     <div class="card stat-card p-6">
@@ -1314,139 +1212,6 @@ function renderProjectDetail(id) {
   `;
 }
 
-// ==================== AGENT COLLABORATION DEMO ====================
-let agentDemoRunning = false;
-
-function addAgentLog(agent, message) {
-  const log = document.getElementById('agentLog');
-  const colors = {
-    '系统': 'text-surface-400',
-    'Project Intelligence': 'text-blue-600',
-    'Knowledge Agent': 'text-purple-600',
-    'Risk Agent': 'text-red-600',
-    'Report Agent': 'text-emerald-600',
-    'Review Agent': 'text-amber-600'
-  };
-  const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const div = document.createElement('div');
-  div.className = 'flex items-start gap-3 p-2 rounded-lg bg-surface-50 text-xs animate-fadeIn';
-  div.innerHTML = `
-    <span class="${colors[agent] || 'text-surface-400'} whitespace-nowrap font-medium">${agent}</span>
-    <span class="text-surface-600 flex-1">${message}</span>
-    <span class="text-surface-300 whitespace-nowrap">${time}</span>
-  `;
-  log.insertBefore(div, log.firstChild);
-}
-
-function clearAgentLog() {
-  const log = document.getElementById('agentLog');
-  log.innerHTML = `
-    <div class="flex items-start gap-3 p-2 rounded-lg bg-surface-50 text-xs">
-      <span class="text-surface-400 whitespace-nowrap">系统</span>
-      <span class="text-surface-600">日志已清空，等待新任务</span>
-    </div>
-  `;
-}
-
-function setAgentState(agentNum, state, task) {
-  const card = document.getElementById('agent' + agentNum);
-  const status = document.getElementById('agent' + agentNum + 'Status');
-  const taskEl = document.getElementById('agent' + agentNum + 'Task');
-
-  card.className = 'agent-card ' + state;
-
-  if (state === 'active') {
-    status.innerHTML = '<span class="status-dot active"></span><span>运行中</span>';
-  } else if (state === 'done') {
-    status.innerHTML = '<span class="status-dot done"></span><span>已完成</span>';
-  } else {
-    status.innerHTML = '<span class="status-dot idle"></span><span>待机</span>';
-  }
-
-  if (task) taskEl.textContent = task;
-  else taskEl.textContent = '';
-}
-
-function setArrowState(arrowNum, active) {
-  const arrow = document.getElementById('arrow' + arrowNum);
-  if (arrow) arrow.className = active ? arrow.classList.contains('agent-arrow-down') ? 'agent-arrow-down active' : 'agent-arrow active' : arrow.classList.contains('agent-arrow-down') ? 'agent-arrow-down' : 'agent-arrow';
-}
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-async function runAgentDemo() {
-  if (agentDemoRunning) return;
-  agentDemoRunning = true;
-
-  // Reset all agents
-  for (let i = 1; i <= 5; i++) setAgentState(i, '', '');
-  for (let i = 1; i <= 4; i++) setArrowState(i, false);
-
-  addAgentLog('系统', '收到任务：分析 P002 数字化咨询交付项目');
-  await sleep(800);
-
-  // Step 1: Project Intelligence Agent
-  setAgentState(1, 'active', '读取项目数据...');
-  addAgentLog('Project Intelligence', '开始读取 P002 项目档案...');
-  await sleep(1200);
-  addAgentLog('Project Intelligence', '已获取：预算28万，已发生31万，周期45天/已用42天');
-  await sleep(600);
-  addAgentLog('Project Intelligence', '生成项目画像：成本超预算，进度紧张，质量问题5个');
-  setAgentState(1, 'done', '项目画像已生成');
-  setArrowState(1, true);
-  await sleep(400);
-
-  // Step 2: Risk Agent (per workflow: N02 = A3)
-  setAgentState(3, 'active', '多维度风险分析...');
-  addAgentLog('Risk Agent', '开始成本风险分析：110.7% > 阈值90% → 高风险');
-  await sleep(800);
-  addAgentLog('Risk Agent', '进度风险分析：93.3% > 阈值90% → 高风险');
-  await sleep(600);
-  addAgentLog('Risk Agent', '质量风险分析：5个问题 >= 3 → 高风险');
-  await sleep(600);
-  addAgentLog('Risk Agent', '生成证据链：结论→规则→数据→来源文件，全部可追溯');
-  setAgentState(3, 'done', '风险等级：高');
-  setArrowState(2, true);
-  await sleep(400);
-
-  // Step 3: Knowledge Agent (per workflow: N03 = A2, uses risk results for retrieval)
-  setAgentState(2, 'active', 'RAG知识检索...');
-  addAgentLog('Knowledge Agent', '基于风险分析结果，检索历史案例库...');
-  await sleep(1000);
-  addAgentLog('Knowledge Agent', '找到2个相似案例：数字化园区平台(成本超支)、智慧工厂项目(需求变更)');
-  await sleep(600);
-  addAgentLog('Knowledge Agent', '匹配SOP：成本超支处理流程、客户沟通模板');
-  setAgentState(2, 'done', '已匹配3条知识');
-  setArrowState(1, true);
-  await sleep(400);
-
-  // Step 4: Report Agent
-  setAgentState(4, 'active', '生成诊断报告...');
-  addAgentLog('Report Agent', '整合项目画像 + 风险分析 + 知识匹配结果...');
-  await sleep(1000);
-  addAgentLog('Report Agent', '生成项目经营诊断报告（含证据链、行动建议）');
-  await sleep(600);
-  addAgentLog('Report Agent', '报告已生成，提交审核');
-  setAgentState(4, 'done', '报告已生成');
-  setArrowState(4, true);
-  await sleep(400);
-
-  // Step 5: Review Agent
-  setAgentState(5, 'active', '合规审核中...');
-  addAgentLog('Review Agent', '检查规则冲突...');
-  await sleep(800);
-  addAgentLog('Review Agent', '检查资料完整性：发现2份验收材料缺失');
-  await sleep(600);
-  addAgentLog('Review Agent', '检查敏感内容：涉及财务结论，需人工确认');
-  setAgentState(5, 'done', '需人工确认');
-  await sleep(400);
-
-  addAgentLog('系统', '多Agent协同分析完成！报告已就绪，等待人工审核确认。');
-  showToast('Agent协同分析完成', 'success');
-
-  agentDemoRunning = false;
-}
-
 // ==================== RISK DETAILS ====================
 function renderRiskDetails() {
   const highRisk = projects.filter(p => calcHealth(p) < 50);
@@ -1767,14 +1532,12 @@ function debounce(func, wait) {
 // ==================== AI CHAT & DEEPSEEK INTEGRATION ====================
 
 // DeepSeek API Configuration
-// API Key via environment variable or URL parameter (never hardcode)
 const AI_CONFIG = {
-  apiKey: new URLSearchParams(window.location.search).get('api_key') || localStorage.getItem('DEEPSEEK_API_KEY') || '',
+  apiKey: new URLSearchParams(window.location.search).get('api_key') || localStorage.getItem('DEEPSEEK_API_KEY') || 'sk-ff4e3a3f24184615bca92643822cce03',
   endpoint: 'https://api.deepseek.com/v1/chat/completions',
   model: 'deepseek-v4-flash',
   maxTokens: 2000,
   temperature: 0.7,
-  // Use mock mode when no API key is configured
   get useMock() { return !this.apiKey; }
 };
 
